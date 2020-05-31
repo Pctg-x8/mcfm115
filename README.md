@@ -1,9 +1,11 @@
-# Fabric Example Mod
+Fluid Mechanics
+---
 
-## Setup
+Experimental industry-extension mod For Minecraft 1.15
+built on [Fabric](https://github.com/FabricMC)
 
-For setup instructions please see the [fabric wiki page](https://fabricmc.net/wiki/tutorial:setup) that relates to the IDE that you are using.
+## Run
 
-## License
-
-This template is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.
+```
+> ./gradlew runClient
+```
