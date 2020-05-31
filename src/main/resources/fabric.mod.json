@@ -23,6 +23,12 @@
         "adapter": "scala",
         "value": "com.cterm2.mcfm115.Mod"
       }
+    ],
+    "client": [
+      {
+        "adapter": "scala",
+        "value": "com.cterm2.mcfm115.ClientMod"
+      }
     ]
   },
 
