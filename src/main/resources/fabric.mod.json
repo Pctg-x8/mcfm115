@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "mcfm115",
+  "version": "${version}",
+
+  "name": "Fluid Mechanics",
+  "description": "Minecraft extended factorization with fluids",
+  "authors": [
+    "Me!"
+  ],
+  "contact": {
+    "homepage": "https://github.com/Pctg-x8",
+    "sources": "https://github.com/Pctg-x8/mcfm115"
+  },
+
+  "license": "CC0-1.0",
+  "icon": "assets/mcfm115/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "scala",
+        "value": "com.cterm2.mcfm115.Mod"
+      }
+    ]
+  },
+
+  "depends": {
+    "fabricloader": ">=0.7.4",
+    "fabric": "*",
+    "minecraft": "1.15.x"
+  },
+  "suggests": {
+    "flamingo": "*"
+  },
+  "requires": {
+    "fabric-language-scala": "*"
+  }
+}
