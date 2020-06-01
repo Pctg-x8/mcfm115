@@ -1,7 +1,7 @@
 package com.cterm2.mcfm115.machines
 
 import com.cterm2.mcfm115.Mod
-import com.cterm2.mcfm115.{utils, constants, texmodel}
+import com.cterm2.mcfm115.{utils, constants, texmodel, items}
 import com.cterm2.mcfm115.common.GenericIOSides
 import net.fabricmc.fabric.api.block.FabricBlockSettings
 import net.minecraft.block.{Material, BlockWithEntity, BlockState}
@@ -10,7 +10,7 @@ import net.minecraft.world.{World, BlockView}
 import net.minecraft.util.{Identifier, DefaultedList, Tickable, ActionResult, Hand}
 import net.minecraft.util.math.{Direction, BlockPos}
 import net.minecraft.util.hit.BlockHitResult
-import net.minecraft.item.{Item, ItemStack}
+import net.minecraft.item.{Item, ItemStack, BlockItem}
 import net.minecraft.text.{Text, TranslatableText}
 import net.minecraft.inventory.{Inventories, Inventory, SidedInventory}
 import net.minecraft.entity.player.{PlayerEntity, PlayerInventory}
@@ -23,7 +23,7 @@ import net.fabricmc.api.{Environment, EnvType}
 import net.minecraft.util.registry.Registry
 import net.fabricmc.fabric.api.client.screen.ScreenProviderRegistry
 import net.minecraft.client.MinecraftClient
-import net.minecraft.item.BlockItem
+import scala.collection.immutable.HashMap
 
 object LargeCombiner {
     final val ID = new Identifier(Mod.ID, "large-combiner")
@@ -57,6 +57,13 @@ object LargeCombiner {
     final val INVENTORY_INDEX_EC_INPUT = 2
     final val INVENTORY_INDEX_SLUG_OUTPUT = 3
     final val INVENTORY_COUNT = INVENTORY_INDEX_SLUG_OUTPUT + 1
+
+    final case class Recipe(final val output: ItemStack, final val processTime: Int)
+    type RecipeMap = HashMap[ItemStack, Recipe]
+    final val RECIPES = HashMap(
+        (items.TinyPileOfCoalDust stacked 16) -> Recipe(items.CoalDust stacked 1, 160),
+        (items.CoalDust stacked 64) -> Recipe(new ItemStack(net.minecraft.item.Items.DIAMOND, 1), 160 * 4)
+    )
 
     object Block extends BlockWithEntity(FabricBlockSettings.of(Material.METAL).build()) {
         override def createBlockEntity(view: BlockView): BlockEntity = new BlockEntity()
@@ -103,6 +110,11 @@ object LargeCombiner {
         private def isValidForInput(item: Item) = true
         private def isValidForOutput(item: Item) = !utils.isItemBucket(item)
 
+        private final def onInputUpdate(newItem: ItemStack) = {
+            val targetRecipe = RECIPES.get(newItem)
+            for (Recipe(t, time) <- targetRecipe) System.out.println("Process Start!", t, time)
+        }
+
         override def tick() = {
             // todo: noop
         }
@@ -112,7 +124,13 @@ object LargeCombiner {
         override def getInvStack(slot: Int) = this.inventory.get(slot)
         override val isInvEmpty = this.inventory.stream.allMatch(i => i.isEmpty)
         override def removeInvStack(slot: Int): ItemStack = Inventories.removeStack(this.inventory, slot)
-        override def setInvStack(slot: Int, stack: ItemStack) = this.inventory.set(slot, stack)
+        override def setInvStack(slot: Int, stack: ItemStack) = {
+            this.inventory.set(slot, stack)
+            if (slot == INVENTORY_INDEX_INPUT) {
+                this.onInputUpdate(this.inventory get slot)
+                this.markDirty
+            }
+        }
         override def takeInvStack(slot: Int, amount: Int) = Inventories.splitStack(this.inventory, slot, amount)
 
         override def createContainer(i: Int, playerInventory: PlayerInventory) = new Container(i, playerInventory, this.asInstanceOf[Inventory])
