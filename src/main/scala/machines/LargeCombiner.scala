@@ -27,7 +27,7 @@ import net.minecraft.item.BlockItem
 
 object LargeCombiner {
     final val ID = new Identifier(Mod.ID, "large-combiner")
-    var BLOCK_ENTITY_TYPE: BlockEntityType[BlockEntity] = null
+    private var BLOCK_ENTITY_TYPE: BlockEntityType[BlockEntity] = null
     final def register = {
         val blockEntityTypeInstance = BlockEntityType.Builder.create(() => new BlockEntity(), Block).build(null)
         this.BLOCK_ENTITY_TYPE = Registry.register(Registry.BLOCK_ENTITY_TYPE, ID, blockEntityTypeInstance)

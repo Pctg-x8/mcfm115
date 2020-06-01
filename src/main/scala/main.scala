@@ -22,6 +22,8 @@ object Mod extends ModInitializer {
 
     override def onInitialize = {
         machines.LargeCombiner.register
+        items.TinyPileOfCoalDust.register
+        items.CoalDust.register
     }
 }
 

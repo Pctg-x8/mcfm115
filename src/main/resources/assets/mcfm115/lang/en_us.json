@@ -1,5 +1,7 @@
 {
     "itemGroup.mcfm115.main-group": "Fluid Mechanics",
+    "item.mcfm115.coal-dust": "Coal Dust",
+    "item.mcfm115.tiny-pile-of-coal-dust": "Tiny Pile of Coal Dust",
     "block.mcfm115.large-combiner": "Large Combiner",
     "view.title.large-combiner": "Large Combiner"
 }
