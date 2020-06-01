@@ -19,41 +19,14 @@ object Mod extends ModInitializer {
         new Identifier(Mod.ID, "main-group"),
         () => new ItemStack(net.minecraft.block.Blocks.COBBLESTONE)
     )
-    var BLOCK_ENTITY_TYPE_LARGE_COMBINER: BlockEntityType[blocks.LargeCombinerBlockEntity] = null
 
     override def onInitialize = {
-        this.BLOCK_ENTITY_TYPE_LARGE_COMBINER = Registry.register(
-            Registry.BLOCK_ENTITY_TYPE,
-            blocks.LargeCombiner.ID,
-            BlockEntityType.Builder.create(() => new blocks.LargeCombinerBlockEntity(), blocks.LargeCombiner).build(null)
-        )
-        ContainerProviderRegistry.INSTANCE.registerFactory(
-            blocks.LargeCombiner.ID,
-            (sid, ident, player, buf) => {
-                val world = player.world
-                val pos = buf.readBlockPos
-
-                world.getBlockState(pos).createContainerFactory(world, pos).createMenu(sid, player.inventory, player)
-            }
-        )
-
-        Registry.register(
-            Registry.BLOCK,
-            blocks.LargeCombiner.ID,
-            blocks.LargeCombiner)
-
-        Registry.register(
-            Registry.ITEM,
-            blocks.LargeCombiner.ID,
-            new BlockItem(blocks.LargeCombiner, new Item.Settings().group(Mod.ITEM_GROUP_MAIN).maxCount(1)))
+        machines.LargeCombiner.register
     }
 }
 
 object ClientMod extends ClientModInitializer {
     override def onInitializeClient = {
-        ScreenProviderRegistry.INSTANCE.registerFactory[blocks.LargeCombinerContainer](
-            blocks.LargeCombiner.ID,
-            c => new blocks.LargeCombinerPanelView(c, MinecraftClient.getInstance.player.inventory)
-        )
+        machines.LargeCombiner.registerClient
     }
 }
