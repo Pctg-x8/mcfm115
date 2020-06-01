@@ -35,15 +35,19 @@ object LargeCombiner extends BlockWithEntity(FabricBlockSettings.of(Material.MET
     }
 }
 
+object LargeCombinerBlockEntity {
+    final val INVENTORY_INDEX_INPUT = 0
+    final val INVENTORY_INDEX_OUTPUT = 1
+    final val INVENTORY_INDEX_EC_INPUT = 2
+    final val INVENTORY_INDEX_SLUG_OUTPUT = 3
+    final val INVENTORY_COUNT = INVENTORY_INDEX_SLUG_OUTPUT + 1
+}
 /**
   * いわゆるTileEntityのことかな？
   * Containers of a Large Combiner
   */
 final class LargeCombinerBlockEntity extends LockableContainerBlockEntity(Mod.BLOCK_ENTITY_TYPE_LARGE_COMBINER) with SidedInventory with Tickable {
-    /**
-      * input / output
-      */
-    override final val getInvSize = 2
+    override final val getInvSize = LargeCombinerBlockEntity.INVENTORY_COUNT
     private val inventory = DefaultedList.ofSize[ItemStack](this.getInvSize, ItemStack.EMPTY);
 
     /**
@@ -52,15 +56,19 @@ final class LargeCombinerBlockEntity extends LockableContainerBlockEntity(Mod.BL
       * @param globalSide グローバルなサイド定数(Directionのこと)
       * @return IO portを表すGenericIOSides
       */
-    // todo: あとでブロックの設定や方向によって変化させる
     private def mapSide(globalSide: Direction): GenericIOSides = globalSide match {
-        case Direction.DOWN => GenericIOSides.Output
-        case Direction.UP => GenericIOSides.Input
+        // todo: あとでブロックの設定や方向によって変化させる
+        case Direction.WEST => GenericIOSides.Output
+        case Direction.EAST => GenericIOSides.Input
+        case Direction.UP => GenericIOSides.EnergyCellInput
+        case Direction.DOWN => GenericIOSides.SlugOutput
         case _ => GenericIOSides.Invalid
     }
     private def mapSlotIndex(ios: GenericIOSides): Int = ios match {
-        case GenericIOSides.Output => 0
-        case GenericIOSides.Input => 1
+        case GenericIOSides.Output => LargeCombinerBlockEntity.INVENTORY_INDEX_OUTPUT
+        case GenericIOSides.Input => LargeCombinerBlockEntity.INVENTORY_INDEX_INPUT
+        case GenericIOSides.EnergyCellInput => LargeCombinerBlockEntity.INVENTORY_INDEX_EC_INPUT
+        case GenericIOSides.SlugOutput => LargeCombinerBlockEntity.INVENTORY_INDEX_SLUG_OUTPUT
         case _ => throw new IllegalArgumentException("no available slots for otherwise ios")
     }
 
@@ -92,6 +100,22 @@ final class LargeCombinerBlockEntity extends LockableContainerBlockEntity(Mod.BL
 
 final class LargeCombinerContainer(syncId: Int, playerInventory: PlayerInventory, private val inventory: Inventory) extends Container(null, syncId) {
     this.inventory onInvOpen this.playerInventory.player
+    this addSlot new Slot(
+        this.inventory, LargeCombinerBlockEntity.INVENTORY_INDEX_INPUT,
+        texmodel.LargeCombinerPanelView.SLOT_POSITION_INGREDIENT_X, texmodel.LargeCombinerPanelView.SLOT_POSITION_PROCESSLINE_Y
+    )
+    this addSlot new Slot(
+        this.inventory, LargeCombinerBlockEntity.INVENTORY_INDEX_OUTPUT,
+        texmodel.LargeCombinerPanelView.SLOT_POSITION_OUTPUT_X, texmodel.LargeCombinerPanelView.SLOT_POSITION_PROCESSLINE_Y
+    )
+    this addSlot new Slot(
+        this.inventory, LargeCombinerBlockEntity.INVENTORY_INDEX_EC_INPUT,
+        texmodel.LargeCombinerPanelView.SLOT_POSITION_EC_X, texmodel.LargeCombinerPanelView.SLOT_POSITION_EC_Y
+    )
+    this addSlot new Slot(
+        this.inventory, LargeCombinerBlockEntity.INVENTORY_INDEX_SLUG_OUTPUT,
+        texmodel.LargeCombinerPanelView.SLOT_POSITION_SLUGOUT_X, texmodel.LargeCombinerPanelView.SLOT_POSITION_SLUGOUT_Y
+    )
     utils.makePlayerInventorySlots(this.playerInventory, 8, texmodel.LargeCombinerPanelView.PLAYER_INVENTORY_START_Y) foreach this.addSlot
 
     override def canUse(player: PlayerEntity) = this.inventory canPlayerUseInv player

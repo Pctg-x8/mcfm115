@@ -8,5 +8,7 @@ sealed trait GenericIOSides
 object GenericIOSides {
     case object Input extends GenericIOSides
     case object Output extends GenericIOSides
+    case object EnergyCellInput extends GenericIOSides
+    case object SlugOutput extends GenericIOSides
     case object Invalid extends GenericIOSides
 }

@@ -17,6 +17,13 @@ object LargeCombinerPanelView {
     final val EC_OVERLAY_Y = 37
     final val EC_WIDTH = 4
     final val EC_HEIGHT = 18
+    final val SLOT_POSITION_INGREDIENT_X = 55
+    final val SLOT_POSITION_OUTPUT_X = 105
+    final val SLOT_POSITION_PROCESSLINE_Y = 38
+    final val SLOT_POSITION_EC_X = 80
+    final val SLOT_POSITION_EC_Y = 17
+    final val SLOT_POSITION_SLUGOUT_X = 105
+    final val SLOT_POSITION_SLUGOUT_Y = 64
 
     final val MAIN_TEXTURE = new Identifier(Mod.ID, "textures/view/container/large-combiner.png")
 
