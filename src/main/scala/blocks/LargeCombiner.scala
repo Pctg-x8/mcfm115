@@ -1,41 +1,24 @@
 package com.cterm2.mcfm115.blocks
 
 import com.cterm2.mcfm115.Mod
-import com.cterm2.mcfm115.utils
-import com.cterm2.mcfm115.constants
+import com.cterm2.mcfm115.{utils, constants}
 import com.cterm2.mcfm115.common.GenericIOSides
-import net.minecraft.block.Material
 import net.fabricmc.fabric.api.block.FabricBlockSettings
-import net.minecraft.block.BlockWithEntity
-import net.minecraft.block.entity.BlockEntity
-import net.minecraft.world.BlockView
-import net.minecraft.block.entity.BlockEntityType
-import net.minecraft.util.Identifier
-import net.minecraft.util.DefaultedList
-import net.minecraft.item.ItemStack
-import net.minecraft.text.TranslatableText
-import net.minecraft.block.entity.LootableContainerBlockEntity
-import net.minecraft.block.entity.LockableContainerBlockEntity
-import net.minecraft.inventory.SidedInventory
-import net.minecraft.util.Tickable
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.inventory.Inventories
-import net.minecraft.container.Container
-import net.minecraft.entity.player.PlayerInventory
-import net.minecraft.util.math.Direction
-import net.minecraft.item.Item
-import scala.util.Try
-import net.minecraft.block.BlockState
-import net.minecraft.util.{ActionResult, Hand}
+import net.minecraft.block.{Material, BlockWithEntity, BlockState}
+import net.minecraft.block.entity.{BlockEntity, BlockEntityType, LockableContainerBlockEntity}
+import net.minecraft.world.{World, BlockView}
+import net.minecraft.util.{Identifier, DefaultedList, Tickable, ActionResult, Hand}
+import net.minecraft.util.math.{Direction, BlockPos}
 import net.minecraft.util.hit.BlockHitResult
-import net.minecraft.util.math.BlockPos
-import net.minecraft.world.World
-import net.fabricmc.fabric.api.container.ContainerProviderRegistry
+import net.minecraft.item.{Item, ItemStack}
+import net.minecraft.text.{Text, TranslatableText}
+import net.minecraft.inventory.{Inventories, Inventory, SidedInventory}
+import net.minecraft.entity.player.{PlayerEntity, PlayerInventory}
+import net.minecraft.container.{Container, Slot}
 import net.minecraft.client.gui.screen.ingame.ContainerScreen
-import net.minecraft.text.Text
+import scala.util.Try
+import net.fabricmc.fabric.api.container.ContainerProviderRegistry
 import com.mojang.blaze3d.systems.RenderSystem
-import net.minecraft.inventory.Inventory
-import net.minecraft.container.Slot
 
 object LargeCombiner extends BlockWithEntity(FabricBlockSettings.of(Material.METAL).build()) {
     final val ID = new Identifier(Mod.ID, "large-combiner")
