@@ -1,7 +1,7 @@
 package com.cterm2.mcfm115.blocks
 
 import com.cterm2.mcfm115.Mod
-import com.cterm2.mcfm115.{utils, constants}
+import com.cterm2.mcfm115.{utils, constants, texmodel}
 import com.cterm2.mcfm115.common.GenericIOSides
 import net.fabricmc.fabric.api.block.FabricBlockSettings
 import net.minecraft.block.{Material, BlockWithEntity, BlockState}
@@ -19,6 +19,7 @@ import net.minecraft.client.gui.screen.ingame.ContainerScreen
 import scala.util.Try
 import net.fabricmc.fabric.api.container.ContainerProviderRegistry
 import com.mojang.blaze3d.systems.RenderSystem
+import net.fabricmc.api.{Environment, EnvType}
 
 object LargeCombiner extends BlockWithEntity(FabricBlockSettings.of(Material.METAL).build()) {
     final val ID = new Identifier(Mod.ID, "large-combiner")
@@ -91,7 +92,7 @@ final class LargeCombinerBlockEntity extends LockableContainerBlockEntity(Mod.BL
 
 final class LargeCombinerContainer(syncId: Int, playerInventory: PlayerInventory, private val inventory: Inventory) extends Container(null, syncId) {
     this.inventory onInvOpen this.playerInventory.player
-    utils.makePlayerInventorySlots(this.playerInventory, 8, 103 + 18 + 18) foreach this.addSlot
+    utils.makePlayerInventorySlots(this.playerInventory, 8, texmodel.LargeCombinerPanelView.PLAYER_INVENTORY_START_Y) foreach this.addSlot
 
     override def canUse(player: PlayerEntity) = this.inventory canPlayerUseInv player
     /**
@@ -118,27 +119,40 @@ final class LargeCombinerContainer(syncId: Int, playerInventory: PlayerInventory
     }
 }
 
+@Environment(EnvType.CLIENT)
 object LargeCombinerPanelView {
-    final val TEXTURE = new Identifier(Mod.ID, "textures/view/container/large-combiner.png")
-    final val TITLE = new TranslatableText("view.title.largeCombiner")
+    final val TITLE = new TranslatableText("view.title.large-combiner")
 }
+@Environment(EnvType.CLIENT)
 final class LargeCombinerPanelView(
     container: LargeCombinerContainer,
     playerInventory: PlayerInventory
 ) extends ContainerScreen[LargeCombinerContainer](container, playerInventory, LargeCombinerPanelView.TITLE) {
-    this.containerHeight = 114 + 6 * 18
+    this.containerWidth = texmodel.LargeCombinerPanelView.PANEL_WIDTH
+    this.containerHeight = texmodel.LargeCombinerPanelView.PANEL_HEIGHT
 
     override def drawForeground(mouseX: Int, mouseY: Int) = {
-        this.font.draw(this.title.asFormattedString, 8.0f, 6.0f, constants.PRIMARY_VIEW_TEXT_COLOR);
-        this.font.draw(this.playerInventory.getDisplayName.asFormattedString, 8.0f, (this.containerHeight - 96 + 2).asInstanceOf[Float], constants.PRIMARY_VIEW_TEXT_COLOR)
+        utils.drawHelper.drawStringCentric(this.font, this.title.asFormattedString, this.containerWidth / 2.0f, 6.0f, constants.PRIMARY_VIEW_TEXT_COLOR);
+        this.font.draw(this.playerInventory.getDisplayName.asFormattedString, 8.0f, (texmodel.LargeCombinerPanelView.PLAYER_INVENTORY_START_Y - 8 - 4).asInstanceOf[Float], constants.PRIMARY_VIEW_TEXT_COLOR)
     }
     override def drawBackground(delta: Float, mouseX: Int, mouseY: Int) = {
         RenderSystem.color4f(1.0f, 1.0f, 1.0f, 1.0f)
-        
         val viewOriginX = (this.width - this.containerWidth) / 2;
         val viewOriginY = (this.height - this.containerHeight) / 2;
-        this.minecraft.getTextureManager bindTexture LargeCombinerPanelView.TEXTURE
-        this.blit(viewOriginX, viewOriginY, 0, 0, this.containerHeight, 6 * 18 + 17)
-        this.blit(viewOriginX, viewOriginY + 6 * 18 + 17, 0, 126, this.containerWidth, 96)
+
+        this.minecraft.getTextureManager bindTexture texmodel.LargeCombinerPanelView.MAIN_TEXTURE
+        texmodel.LargeCombinerPanelView.blitMainPanel(this, viewOriginX, viewOriginY)
+        texmodel.LargeCombinerPanelView.blitProgressArrowOverlay(
+            this,
+            viewOriginX + texmodel.LargeCombinerPanelView.ARROW_OVERLAY_X,
+            viewOriginY + texmodel.LargeCombinerPanelView.ARROW_OVERLAY_Y,
+            0.6f
+        )
+
+        texmodel.LargeCombinerPanelView.blitEnergyCellBase(
+            this,
+            viewOriginX + texmodel.LargeCombinerPanelView.EC_OVERLAY_X,
+            viewOriginY + texmodel.LargeCombinerPanelView.EC_OVERLAY_Y
+        )
     }
 }
