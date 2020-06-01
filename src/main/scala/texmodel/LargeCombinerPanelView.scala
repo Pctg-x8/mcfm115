@@ -26,5 +26,4 @@ object LargeCombinerPanelView {
         renderer.blit(x, y, PANEL_WIDTH + 1, 0, (ARROW_SIZE * rate).asInstanceOf[Int], ARROW_SIZE)
     def blitEnergyCellBase(renderer: DrawableHelper, x: Int, y: Int) =
         renderer.blit(x, y, EC_OVERLAY_X, EC_OVERLAY_Y, EC_WIDTH, EC_HEIGHT)
-    
 }

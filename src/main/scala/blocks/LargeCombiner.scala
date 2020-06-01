@@ -131,6 +131,11 @@ final class LargeCombinerPanelView(
     this.containerWidth = texmodel.LargeCombinerPanelView.PANEL_WIDTH
     this.containerHeight = texmodel.LargeCombinerPanelView.PANEL_HEIGHT
 
+    override def render(mouseX: Int, mouseY: Int, delta: Float) = {
+        // ちゃんとオーバーライドしてrenderBackgroundしてあげないと背景が暗くなってくれないらしい(なんだそれは)
+        this.renderBackground()
+        super.render(mouseX, mouseY, delta)
+    }
     override def drawForeground(mouseX: Int, mouseY: Int) = {
         utils.drawHelper.drawStringCentric(this.font, this.title.asFormattedString, this.containerWidth / 2.0f, 6.0f, constants.PRIMARY_VIEW_TEXT_COLOR);
         this.font.draw(this.playerInventory.getDisplayName.asFormattedString, 8.0f, (texmodel.LargeCombinerPanelView.PLAYER_INVENTORY_START_Y - 8 - 4).asInstanceOf[Float], constants.PRIMARY_VIEW_TEXT_COLOR)
