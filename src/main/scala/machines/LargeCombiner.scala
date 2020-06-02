@@ -58,12 +58,12 @@ object LargeCombiner {
     final val INVENTORY_INDEX_SLUG_OUTPUT = 3
     final val INVENTORY_COUNT = INVENTORY_INDEX_SLUG_OUTPUT + 1
 
-    final case class Recipe(final val output: ItemStack, final val processTime: Int)
-    type RecipeMap = HashMap[ItemStack, Recipe]
-    final val RECIPES = HashMap(
-        (items.TinyPileOfCoalDust stacked 16) -> Recipe(items.CoalDust stacked 1, 160),
-        (items.CoalDust stacked 64) -> Recipe(new ItemStack(net.minecraft.item.Items.DIAMOND, 1), 160 * 4)
-    )
+    // final case class Recipe(final val output: ItemStack, final val processTime: Int)
+    // type RecipeMap = HashMap[ItemStack, Recipe]
+    // final val RECIPES = HashMap(
+    //     (items.TinyPileOfCoalDust stacked 16) -> Recipe(items.CoalDust stacked 1, 160),
+    //     (items.CoalDust stacked 64) -> Recipe(new ItemStack(net.minecraft.item.Items.DIAMOND, 1), 160 * 4)
+    // )
 
     object Block extends BlockWithEntity(FabricBlockSettings.of(Material.METAL).build()) {
         override def createBlockEntity(view: BlockView): BlockEntity = new BlockEntity()
@@ -111,8 +111,8 @@ object LargeCombiner {
         private def isValidForOutput(item: Item) = !utils.isItemBucket(item)
 
         private final def onInputUpdate(newItem: ItemStack) = {
-            val targetRecipe = RECIPES.get(newItem)
-            for (Recipe(t, time) <- targetRecipe) System.out.println("Process Start!", t, time)
+            // val targetRecipe = RECIPES.get(newItem)
+            // for (Recipe(t, time) <- targetRecipe) System.out.println("Process Start!", t, time)
         }
 
         override def tick() = {

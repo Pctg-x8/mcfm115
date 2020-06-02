@@ -1,0 +1,11 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "ingredients": [
+        { "item": "minecraft:paper" },
+        { "item": "minecraft:sand" }
+    ],
+    "result": {
+        "item": "mcfm115:sand-paper",
+        "count": 1
+    }
+}

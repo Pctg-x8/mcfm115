@@ -1,0 +1,11 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "ingredients": [
+        { "item": "mcfm115:sand-paper" },
+        { "item": "minecraft:charcoal" }
+    ],
+    "result": {
+        "item": "mcfm115:tiny-pile-of-carbon-dust",
+        "count": 1
+    }
+}
