@@ -22,8 +22,10 @@ final class ContainedEnergyCell(val max: Int) {
   final def rateLeft = this.current.asInstanceOf[Float] / this.max.asInstanceOf[Float]
 
   private final val TAG_KEY_CURRENT = "ContainedECCurrent"
-  def toTag(tag: CompoundTag) = {
+  def toTag(tag: CompoundTag): CompoundTag = {
     tag.putInt(TAG_KEY_CURRENT, current)
+
+    tag
   }
   def fromTag(tag: CompoundTag) = {
     this.current = tag getInt TAG_KEY_CURRENT min this.max
