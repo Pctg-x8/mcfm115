@@ -85,7 +85,8 @@ object LargeCombiner {
      */
     final class BlockEntity extends LockableContainerBlockEntity(BLOCK_ENTITY_TYPE) with SidedInventory with Tickable {
         override final val getInvSize = INVENTORY_COUNT
-        private val inventory = DefaultedList.ofSize[ItemStack](this.getInvSize, ItemStack.EMPTY);
+        private val inventory = DefaultedList.ofSize[ItemStack](this.getInvSize, ItemStack.EMPTY)
+        private val ec = new ContainedEnergyCell(128_000)
 
         /**
          * IO portのサイドとのマッピング
@@ -148,11 +149,13 @@ object LargeCombiner {
         override def toTag(tag: CompoundTag) = {
             super.toTag(tag)
             Inventories.toTag(tag, this.inventory)
+            this.ec toTag tag
         }
         override def fromTag(tag: CompoundTag) = {
             super.fromTag(tag)
             this.inventory.clear()
             Inventories.fromTag(tag, this.inventory)
+            this.ec fromTag tag
         }
     }
     
