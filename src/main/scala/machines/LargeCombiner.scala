@@ -26,6 +26,10 @@ import net.minecraft.client.MinecraftClient
 import scala.collection.immutable.HashMap
 import com.cterm2.mcfm115.utils.TextRendererExt._
 import net.minecraft.nbt.CompoundTag
+import net.minecraft.block.entity.AbstractFurnaceBlockEntity
+import net.minecraft.client.gui.screen.ingame.AbstractFurnaceScreen
+import net.minecraft.container.AbstractFurnaceContainer
+import net.minecraft.container.CraftingContainer
 
 object LargeCombiner {
   final val ID = Mod makeIdentifier "large-combiner"
@@ -60,12 +64,12 @@ object LargeCombiner {
   final val INVENTORY_INDEX_SLUG_OUTPUT = 3
   final val INVENTORY_COUNT = INVENTORY_INDEX_SLUG_OUTPUT + 1
 
-  // final case class Recipe(final val output: ItemStack, final val processTime: Int)
-  // type RecipeMap = HashMap[ItemStack, Recipe]
-  // final val RECIPES = HashMap(
-  //     (items.TinyPileOfCoalDust stacked 16) -> Recipe(items.CoalDust stacked 1, 160),
-  //     (items.CoalDust stacked 64) -> Recipe(new ItemStack(net.minecraft.item.Items.DIAMOND, 1), 160 * 4)
-  // )
+  final case class Recipe(final val output: ItemStack, final val processTime: Int)
+  type RecipeMap = HashMap[ItemStack, Recipe]
+  final val RECIPES = HashMap(
+    (items.TinyPileOfCarbonDust stacked 16) -> Recipe(items.CarbonDust stacked 1, 160),
+    (items.CarbonDust stacked 64) -> Recipe(new ItemStack(net.minecraft.item.Items.DIAMOND, 1), 160 * 4)
+  )
 
   object Block extends BlockWithEntity(FabricBlockSettings.of(Material.METAL).build()) {
     override def createBlockEntity(view: BlockView): BlockEntity = new BlockEntity()
@@ -85,8 +89,11 @@ object LargeCombiner {
    */
   final class BlockEntity extends LockableContainerBlockEntity(BLOCK_ENTITY_TYPE) with SidedInventory with Tickable {
     override final val getInvSize = INVENTORY_COUNT
-    private val inventory = DefaultedList.ofSize[ItemStack](this.getInvSize, ItemStack.EMPTY)
-    private val ec = new ContainedEnergyCell(128_000)
+    private[this] val inventory = DefaultedList.ofSize[ItemStack](this.getInvSize, ItemStack.EMPTY)
+    private[this] val ec = new ContainedEnergyCell(128 * 1000)
+    private[this] var currentProcessingRecipe: Option[Recipe] = None
+
+    private[this] var processTime: Int = 0
 
     /**
      * IO portのサイドとのマッピング
@@ -110,17 +117,30 @@ object LargeCombiner {
       case _ => throw new IllegalArgumentException("no available slots for otherwise ios")
     }
 
-    private def isValidForInput(item: Item) = true
-    private def isValidForOutput(item: Item) = !utils.isItemBucket(item)
+    private def isValidForInput(stack: ItemStack) = (RECIPES get stack).isDefined
+    private def isValidForOutput(stack: ItemStack) = !(utils isItemBucket stack.getItem)
 
-    private final def onInputUpdate(newItem: ItemStack) = {
-      // val targetRecipe = RECIPES.get(newItem)
-      // for (Recipe(t, time) <- targetRecipe) System.out.println("Process Start!", t, time)
+    private final def onInputChanged(newItem: ItemStack) = {
+      val oldRecipe = this.currentProcessingRecipe
+      this.currentProcessingRecipe = RECIPES get newItem
+      if (oldRecipe != this.currentProcessingRecipe) {
+        this.processTime = 0
+      }
     }
 
     override def tick() = {
-      // todo: noop
+      for (Recipe(o, time) <- this.currentProcessingRecipe) {
+        this.processTime += 1
+        if (this.processTime >= time) {
+          this.processTime -= time
+          System.out.println("Processed!")
+        }
+        this.markDirty()
+      }
     }
+
+    final def slotItemInput = this.inventory get INVENTORY_INDEX_INPUT
+    final def processProgress: Float = this.currentProcessingRecipe map { case Recipe(_, total) => this.processTime.asInstanceOf[Float] / total.asInstanceOf[Float] } getOrElse 0.0f
 
     override def clear() = { this.inventory.clear() }
     override def canPlayerUseInv(player: PlayerEntity) = utils.distanceFromBlockCentric(player, this.pos) <= constants.PLAYER_DISTANCE_CONTAINER_USABLE_THRESHOLD
@@ -130,36 +150,47 @@ object LargeCombiner {
     override def setInvStack(slot: Int, stack: ItemStack) = {
       this.inventory.set(slot, stack)
       if (slot == INVENTORY_INDEX_INPUT) {
-        this.onInputUpdate(this.inventory get slot)
-        this.markDirty
+        this.onInputChanged(this.inventory get slot)
+        this.markDirty()
       }
     }
     override def takeInvStack(slot: Int, amount: Int) = Inventories.splitStack(this.inventory, slot, amount)
 
-    override def createContainer(i: Int, playerInventory: PlayerInventory) = new Container(i, playerInventory, this.asInstanceOf[Inventory])
+    override def createContainer(i: Int, playerInventory: PlayerInventory) = new Container(i, playerInventory, this.asInstanceOf[Inventory], this)
     override val getContainerName = new TranslatableText("container.large-combiner")
     override def canExtractInvStack(slot: Int, stack: ItemStack, dir: Direction) = this.mapSide(dir) == GenericIOSides.Output && slot == 1 && !utils.isItemBucket(stack.getItem)
     override def canInsertInvStack(slot: Int, stack: ItemStack, dir: Direction) = this.mapSide(dir) match {
-      case GenericIOSides.Output => this.isValidForOutput(stack.getItem)
-      case GenericIOSides.Input => this.isValidForInput(stack.getItem)
+      case GenericIOSides.Output => this isValidForOutput stack
+      case GenericIOSides.Input => this isValidForInput stack
       case _ => false
     }
     override def getInvAvailableSlots(side: Direction): Array[Int] = Try { Array(this.mapSlotIndex(this.mapSide(side))) }.getOrElse(Array())
 
-    override def toTag(tag: CompoundTag) = {
+    private[this] final val TAG_KEY_PROCESS_TIME = "LargeCombinerProcessTime"
+    override def toTag(tag: CompoundTag): CompoundTag = {
       super.toTag(tag)
       Inventories.toTag(tag, this.inventory)
       this.ec toTag tag
+      tag.putInt(TAG_KEY_PROCESS_TIME, this.processTime)
+
+      tag
     }
     override def fromTag(tag: CompoundTag) = {
       super.fromTag(tag)
       this.inventory.clear()
       Inventories.fromTag(tag, this.inventory)
       this.ec fromTag tag
+      this.processTime = tag getInt TAG_KEY_PROCESS_TIME
+      this onInputChanged this.slotItemInput
     }
   }
   
-  final class Container(syncId: Int, playerInventory: PlayerInventory, private val inventory: Inventory) extends net.minecraft.container.Container(null, syncId) {
+  final class Container(
+    syncId: Int,
+    playerInventory: PlayerInventory,
+    private val inventory: Inventory,
+    val blockEntity: BlockEntity
+  ) extends net.minecraft.container.Container(null, syncId) {
     this.inventory onInvOpen this.playerInventory.player
     this addSlot new Slot(
       this.inventory, INVENTORY_INDEX_INPUT,
@@ -213,7 +244,7 @@ object LargeCombiner {
   }
   @Environment(EnvType.CLIENT)
   final class PanelView(
-    container: Container,
+    private[this] val container: Container,
     playerInventory: PlayerInventory
   ) extends ContainerScreen[Container](container, playerInventory, PanelView.TITLE) {
     this.containerWidth = texmodel.LargeCombinerPanelView.PANEL_WIDTH
@@ -239,7 +270,7 @@ object LargeCombiner {
         this,
         viewOriginX + texmodel.LargeCombinerPanelView.ARROW_OVERLAY_X,
         viewOriginY + texmodel.LargeCombinerPanelView.ARROW_OVERLAY_Y,
-        0.6f
+        this.container.blockEntity.processProgress
       )
 
       texmodel.LargeCombinerPanelView.blitEnergyCellBase(
