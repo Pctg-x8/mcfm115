@@ -13,23 +13,24 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.text.TranslatableText
 
 object Mod extends ModInitializer {
-    final val ID = "mcfm115"
+  final val ID = "mcfm115"
+  final def makeIdentifier(localId: String) = new Identifier(Mod.ID, localId)
 
-    final val ITEM_GROUP_MAIN = FabricItemGroupBuilder.build(
-        new Identifier(Mod.ID, "main-group"),
-        () => new ItemStack(net.minecraft.block.Blocks.COBBLESTONE)
-    )
+  final val ITEM_GROUP_MAIN = FabricItemGroupBuilder.build(
+    Mod makeIdentifier "main-group",
+    () => new ItemStack(net.minecraft.block.Blocks.COBBLESTONE)
+  )
 
-    override def onInitialize = {
-        machines.LargeCombiner.register
-        items.TinyPileOfCarbonDust.register
-        items.CarbonDust.register
-        items.SandPaper.register
-    }
+  override def onInitialize = {
+    machines.LargeCombiner.register
+    items.TinyPileOfCarbonDust.register
+    items.CarbonDust.register
+    items.SandPaper.register
+  }
 }
 
 object ClientMod extends ClientModInitializer {
-    override def onInitializeClient = {
-        machines.LargeCombiner.registerClient
-    }
+  override def onInitializeClient = {
+    machines.LargeCombiner.registerClient
+  }
 }

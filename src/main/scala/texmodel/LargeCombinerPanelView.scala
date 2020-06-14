@@ -1,7 +1,6 @@
 package com.cterm2.mcfm115.texmodel
 
 import com.cterm2.mcfm115.Mod
-import net.minecraft.util.Identifier
 import net.minecraft.client.gui.DrawableHelper
 import net.fabricmc.api.{Environment, EnvType}
 
@@ -25,7 +24,7 @@ object LargeCombinerPanelView {
     final val SLOT_POSITION_SLUGOUT_X = 105
     final val SLOT_POSITION_SLUGOUT_Y = 64
 
-    final val MAIN_TEXTURE = new Identifier(Mod.ID, "textures/view/container/large-combiner.png")
+    final val MAIN_TEXTURE = Mod makeIdentifier "textures/view/container/large-combiner.png"
 
     def blitMainPanel(renderer: DrawableHelper, x: Int, y: Int) =
         renderer.blit(x, y, 0, 0, PANEL_WIDTH, PANEL_HEIGHT)
