@@ -7,7 +7,7 @@ import net.fabricmc.fabric.api.block.FabricBlockSettings
 import net.minecraft.block.{Material, BlockWithEntity, BlockState}
 import net.minecraft.block.entity.{BlockEntity, BlockEntityType, LockableContainerBlockEntity}
 import net.minecraft.world.{World, BlockView}
-import net.minecraft.util.{Identifier, DefaultedList, Tickable, ActionResult, Hand}
+import net.minecraft.util.{DefaultedList, Tickable, ActionResult, Hand}
 import net.minecraft.util.math.{Direction, BlockPos}
 import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.item.{Item, ItemStack, BlockItem}
@@ -24,9 +24,11 @@ import net.minecraft.util.registry.Registry
 import net.fabricmc.fabric.api.client.screen.ScreenProviderRegistry
 import net.minecraft.client.MinecraftClient
 import scala.collection.immutable.HashMap
+import com.cterm2.mcfm115.utils.TextRendererExt._
+import net.minecraft.nbt.CompoundTag
 
 object LargeCombiner {
-    final val ID = new Identifier(Mod.ID, "large-combiner")
+    final val ID = Mod makeIdentifier "large-combiner"
     private var BLOCK_ENTITY_TYPE: BlockEntityType[BlockEntity] = null
     final def register = {
         val blockEntityTypeInstance = BlockEntityType.Builder.create(() => new BlockEntity(), Block).build(null)
@@ -142,6 +144,16 @@ object LargeCombiner {
             case _ => false
         }
         override def getInvAvailableSlots(side: Direction): Array[Int] = Try { Array(this.mapSlotIndex(this.mapSide(side))) }.getOrElse(Array())
+
+        override def toTag(tag: CompoundTag) = {
+            super.toTag(tag)
+            Inventories.toTag(tag, this.inventory)
+        }
+        override def fromTag(tag: CompoundTag) = {
+            super.fromTag(tag)
+            this.inventory.clear()
+            Inventories.fromTag(tag, this.inventory)
+        }
     }
     
     final class Container(syncId: Int, playerInventory: PlayerInventory, private val inventory: Inventory) extends net.minecraft.container.Container(null, syncId) {
@@ -207,7 +219,7 @@ object LargeCombiner {
             super.render(mouseX, mouseY, delta)
         }
         override def drawForeground(mouseX: Int, mouseY: Int) = {
-            utils.drawHelper.drawStringCentric(this.font, this.title.asFormattedString, this.containerWidth / 2.0f, 6.0f, constants.PRIMARY_VIEW_TEXT_COLOR);
+            this.font.drawStringCentric(this.title.asFormattedString, this.containerWidth / 2.0f, 6.0f, constants.PRIMARY_VIEW_TEXT_COLOR);
             this.font.draw(this.playerInventory.getDisplayName.asFormattedString, 8.0f, (texmodel.LargeCombinerPanelView.PLAYER_INVENTORY_START_Y - 8 - 4).asInstanceOf[Float], constants.PRIMARY_VIEW_TEXT_COLOR)
         }
         override def drawBackground(delta: Float, mouseX: Int, mouseY: Int) = {
