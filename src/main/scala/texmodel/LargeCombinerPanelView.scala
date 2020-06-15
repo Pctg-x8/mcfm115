@@ -29,7 +29,7 @@ object LargeCombinerPanelView {
     def blitMainPanel(renderer: DrawableHelper, x: Int, y: Int) =
         renderer.blit(x, y, 0, 0, PANEL_WIDTH, PANEL_HEIGHT)
     def blitProgressArrowOverlay(renderer: DrawableHelper, x: Int, y: Int, rate: Float) =
-        renderer.blit(x, y, PANEL_WIDTH + 1, 0, (ARROW_SIZE * rate).asInstanceOf[Int], ARROW_SIZE)
+        renderer.blit(x, y, PANEL_WIDTH + 1, 0, (ARROW_SIZE * rate).round.asInstanceOf[Int], ARROW_SIZE)
     def blitEnergyCellBase(renderer: DrawableHelper, x: Int, y: Int) =
         renderer.blit(x, y, EC_OVERLAY_X, EC_OVERLAY_Y, EC_WIDTH, EC_HEIGHT)
 }
