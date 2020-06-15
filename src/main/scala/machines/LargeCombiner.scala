@@ -3,6 +3,7 @@ package com.cterm2.mcfm115.machines
 import com.cterm2.mcfm115.Mod
 import com.cterm2.mcfm115.{utils, constants, texmodel, items}
 import com.cterm2.mcfm115.common.GenericIOSides
+import com.cterm2.mcfm115.utils.SerializeHelper._
 import net.fabricmc.fabric.api.block.FabricBlockSettings
 import net.minecraft.block.{Material, BlockWithEntity, BlockState}
 import net.minecraft.block.entity.{BlockEntity, BlockEntityType, LockableContainerBlockEntity}
@@ -23,17 +24,19 @@ import net.fabricmc.api.{Environment, EnvType}
 import net.minecraft.util.registry.Registry
 import net.fabricmc.fabric.api.client.screen.ScreenProviderRegistry
 import net.minecraft.client.MinecraftClient
-import scala.collection.immutable.HashMap
 import com.cterm2.mcfm115.utils.TextRendererExt._
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.block.entity.AbstractFurnaceBlockEntity
-import net.minecraft.client.gui.screen.ingame.AbstractFurnaceScreen
-import net.minecraft.container.AbstractFurnaceContainer
-import net.minecraft.container.CraftingContainer
+import net.minecraft.recipe.{RecipeType, Recipe => IBaseRecipe, Ingredient, RecipeSerializer => IRecipeSerializer}
+import net.minecraft.util.{Identifier, PacketByteBuf}
+import com.google.gson.JsonObject
+import scala.jdk.OptionConverters._
 
 object LargeCombiner {
   final val ID = Mod makeIdentifier "large-combiner"
+  final val RECIPE_ID = Mod makeIdentifier "large_combine"
   private var BLOCK_ENTITY_TYPE: BlockEntityType[BlockEntity] = null
+  private var RECIPE_TYPE: RecipeType[Recipe] = null
+  private var RECIPE_SERIALIZER: RecipeSerializer = null
   final def register = {
     val blockEntityTypeInstance = BlockEntityType.Builder.create(() => new BlockEntity(), Block).build(null)
     this.BLOCK_ENTITY_TYPE = Registry.register(Registry.BLOCK_ENTITY_TYPE, ID, blockEntityTypeInstance)
@@ -50,6 +53,8 @@ object LargeCombiner {
     val item = new BlockItem(Block, new Item.Settings().group(Mod.ITEM_GROUP_MAIN).maxCount(1))
     Registry.register(Registry.BLOCK, ID, Block)
     Registry.register(Registry.ITEM, ID, item)
+    this.RECIPE_TYPE = Registry.register(Registry.RECIPE_TYPE, RECIPE_ID, new RecipeType[Recipe] {})
+    this.RECIPE_SERIALIZER = Registry.register(Registry.RECIPE_SERIALIZER, RECIPE_ID, new RecipeSerializer())
   }
   final def registerClient = {
     ScreenProviderRegistry.INSTANCE.registerFactory[Container](
@@ -64,12 +69,38 @@ object LargeCombiner {
   final val INVENTORY_INDEX_SLUG_OUTPUT = 3
   final val INVENTORY_COUNT = INVENTORY_INDEX_SLUG_OUTPUT + 1
 
-  final case class Recipe(final val output: ItemStack, final val processTime: Int)
-  type RecipeMap = HashMap[ItemStack, Recipe]
-  final val RECIPES = HashMap(
-    (items.TinyPileOfCarbonDust stacked 16) -> Recipe(items.CarbonDust stacked 1, 160),
-    (items.CarbonDust stacked 64) -> Recipe(new ItemStack(net.minecraft.item.Items.DIAMOND, 1), 160 * 4)
-  )
+  final case class Recipe(final val input: Ingredient, final val output: ItemStack, final val processTime: Int) extends IBaseRecipe[BlockEntity] {
+    override def matches(inv: BlockEntity, world: World) = this.input test inv.getInvStack(0)
+    override def craft(inv: BlockEntity) = this.output.copy
+    override final val getId = RECIPE_ID
+    override def getSerializer() = RECIPE_SERIALIZER
+    override def getType() = RECIPE_TYPE
+    override final val getOutput = this.output
+    @Environment(EnvType.CLIENT)
+    override def fits(width: Int, height: Int) = true
+  }
+  final class RecipeSerializer extends IRecipeSerializer[Recipe] {
+    override def read(id: Identifier, json: JsonObject) = {
+      val ingredient = json getIngredient "ingredient"
+      val output = json getItemStack "result"
+      val processTime = json getInt "processTime"
+
+      Recipe(ingredient, output, processTime)
+    }
+
+    override def read(id: Identifier, buf: PacketByteBuf) = {
+      val ingredient = Ingredient fromPacket buf
+      val output = buf.readItemStack()
+      val processTime = buf.readVarInt()
+
+      Recipe(ingredient, output, processTime)
+    }
+    override def write(buf: PacketByteBuf, recipe: Recipe) = {
+      recipe.input write buf
+      buf writeItemStack recipe.output
+      buf writeVarInt recipe.processTime
+    }
+  }
 
   object Block extends BlockWithEntity(FabricBlockSettings.of(Material.METAL).build()) {
     override def createBlockEntity(view: BlockView): BlockEntity = new BlockEntity()
@@ -89,6 +120,7 @@ object LargeCombiner {
    */
   final class BlockEntity extends LockableContainerBlockEntity(BLOCK_ENTITY_TYPE) with SidedInventory with Tickable {
     override final val getInvSize = INVENTORY_COUNT
+    private[this] var ignoreInputEvents = false
     private[this] val inventory = DefaultedList.ofSize[ItemStack](this.getInvSize, ItemStack.EMPTY)
     private[this] val ec = new ContainedEnergyCell(128 * 1000)
     private[this] var currentProcessingRecipe: Option[Recipe] = None
@@ -117,19 +149,20 @@ object LargeCombiner {
       case _ => throw new IllegalArgumentException("no available slots for otherwise ios")
     }
 
-    private def isValidForInput(stack: ItemStack) = (RECIPES get stack).isDefined
-    private def isValidForOutput(stack: ItemStack) = !(utils isItemBucket stack.getItem)
+    private def findMatchingRecipe() = this.world.getRecipeManager.getFirstMatch(RECIPE_TYPE, this, this.world).toScala
 
     private final def onInputChanged(newItem: ItemStack) = {
       val oldRecipe = this.currentProcessingRecipe
-      this.currentProcessingRecipe = RECIPES get newItem
+      System.out.println("onInputChanged! "+this.world)
+      this.currentProcessingRecipe = this.findMatchingRecipe()
       if (oldRecipe != this.currentProcessingRecipe) {
         this.processTime = 0
+        this.markDirty()
       }
     }
 
     override def tick() = {
-      for (Recipe(o, time) <- this.currentProcessingRecipe) {
+      for (Recipe(_, o, time) <- this.currentProcessingRecipe) {
         this.processTime += 1
         if (this.processTime >= time) {
           this.processTime -= time
@@ -140,18 +173,17 @@ object LargeCombiner {
     }
 
     final def slotItemInput = this.inventory get INVENTORY_INDEX_INPUT
-    final def processProgress: Float = this.currentProcessingRecipe map { case Recipe(_, total) => this.processTime.asInstanceOf[Float] / total.asInstanceOf[Float] } getOrElse 0.0f
+    final def processProgress: Float = this.currentProcessingRecipe map { r => this.processTime.asInstanceOf[Float] / r.processTime.asInstanceOf[Float] } getOrElse 0.0f
 
     override def clear() = { this.inventory.clear() }
     override def canPlayerUseInv(player: PlayerEntity) = utils.distanceFromBlockCentric(player, this.pos) <= constants.PLAYER_DISTANCE_CONTAINER_USABLE_THRESHOLD
     override def getInvStack(slot: Int) = this.inventory.get(slot)
     override val isInvEmpty = this.inventory.stream.allMatch(i => i.isEmpty)
-    override def removeInvStack(slot: Int): ItemStack = Inventories.removeStack(this.inventory, slot)
+    override def removeInvStack(slot: Int) = Inventories.removeStack(this.inventory, slot)
     override def setInvStack(slot: Int, stack: ItemStack) = {
       this.inventory.set(slot, stack)
-      if (slot == INVENTORY_INDEX_INPUT) {
+      if (!this.world.isClient && !this.ignoreInputEvents && slot == INVENTORY_INDEX_INPUT) {
         this.onInputChanged(this.inventory get slot)
-        this.markDirty()
       }
     }
     override def takeInvStack(slot: Int, amount: Int) = Inventories.splitStack(this.inventory, slot, amount)
@@ -160,8 +192,8 @@ object LargeCombiner {
     override val getContainerName = new TranslatableText("container.large-combiner")
     override def canExtractInvStack(slot: Int, stack: ItemStack, dir: Direction) = this.mapSide(dir) == GenericIOSides.Output && slot == 1 && !utils.isItemBucket(stack.getItem)
     override def canInsertInvStack(slot: Int, stack: ItemStack, dir: Direction) = this.mapSide(dir) match {
-      case GenericIOSides.Output => this isValidForOutput stack
-      case GenericIOSides.Input => this isValidForInput stack
+      case GenericIOSides.Output => false
+      case GenericIOSides.Input => true
       case _ => false
     }
     override def getInvAvailableSlots(side: Direction): Array[Int] = Try { Array(this.mapSlotIndex(this.mapSide(side))) }.getOrElse(Array())
@@ -176,12 +208,15 @@ object LargeCombiner {
       tag
     }
     override def fromTag(tag: CompoundTag) = {
+      this.ignoreInputEvents = true
+
       super.fromTag(tag)
       this.inventory.clear()
       Inventories.fromTag(tag, this.inventory)
       this.ec fromTag tag
       this.processTime = tag getInt TAG_KEY_PROCESS_TIME
-      this onInputChanged this.slotItemInput
+
+      this.ignoreInputEvents = false
     }
   }
   
