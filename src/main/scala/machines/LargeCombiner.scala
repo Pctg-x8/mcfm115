@@ -30,6 +30,7 @@ import net.minecraft.recipe.{RecipeType, Recipe => IBaseRecipe, Ingredient, Reci
 import net.minecraft.util.{Identifier, PacketByteBuf}
 import com.google.gson.JsonObject
 import scala.jdk.OptionConverters._
+import net.minecraft.container.PropertyDelegate
 
 object LargeCombiner {
   final val ID = Mod makeIdentifier "large-combiner"
@@ -68,9 +69,13 @@ object LargeCombiner {
   final val INVENTORY_INDEX_EC_INPUT = 2
   final val INVENTORY_INDEX_SLUG_OUTPUT = 3
   final val INVENTORY_COUNT = INVENTORY_INDEX_SLUG_OUTPUT + 1
+  final val PD_INDEX_PROCESS_TIME = 0
+  final val PD_INDEX_PROCESS_FULL = 1
+  final val PD_INDEX_ENERGY_LEFT = 2
+  final val PD_INDEX_ENERGY_FULL = 3
 
   final case class Recipe(final val input: Ingredient, final val output: ItemStack, final val processTime: Int) extends IBaseRecipe[BlockEntity] {
-    override def matches(inv: BlockEntity, world: World) = this.input test inv.getInvStack(0)
+    override def matches(inv: BlockEntity, world: World) = this.input test inv.getInvStack(INVENTORY_INDEX_INPUT)
     override def craft(inv: BlockEntity) = this.output.copy
     override final val getId = RECIPE_ID
     override def getSerializer() = RECIPE_SERIALIZER
@@ -122,10 +127,30 @@ object LargeCombiner {
     override final val getInvSize = INVENTORY_COUNT
     private[this] var ignoreInputEvents = false
     private[this] val inventory = DefaultedList.ofSize[ItemStack](this.getInvSize, ItemStack.EMPTY)
-    private[this] val ec = new ContainedEnergyCell(128 * 1000)
-    private[this] var currentProcessingRecipe: Option[Recipe] = None
+    private val ec = new ContainedEnergyCell(128 * 1000)
+    private var currentProcessingRecipe: Option[Recipe] = None
 
-    private[this] var processTime: Int = 0
+    private var processTime: Int = 0
+    private var processFullTime: Int = 0
+
+    final val propertyDelegate = new PropertyDelegate {
+      override def get(index: Int) = index match {
+        case PD_INDEX_PROCESS_TIME => BlockEntity.this.processTime
+        case PD_INDEX_PROCESS_FULL => BlockEntity.this.processFullTime
+        case PD_INDEX_ENERGY_LEFT => BlockEntity.this.ec.left
+        case PD_INDEX_ENERGY_FULL => BlockEntity.this.ec.max
+        case _ => 0
+      }
+      override def set(index: Int, value: Int) = index match {
+        case PD_INDEX_PROCESS_TIME => { BlockEntity.this.processTime = value }
+        case PD_INDEX_PROCESS_FULL => { BlockEntity.this.processFullTime = value }
+        case _ => {
+          System.out.println("TODO: PropertyDelegate set EnergyCellProperties! "+index+"/"+value)
+        }
+      }
+
+      override final val size = PD_INDEX_ENERGY_FULL + 1
+    }
 
     /**
      * IO portのサイドとのマッピング
@@ -153,10 +178,10 @@ object LargeCombiner {
 
     private final def onInputChanged(newItem: ItemStack) = {
       val oldRecipe = this.currentProcessingRecipe
-      System.out.println("onInputChanged! "+this.world)
       this.currentProcessingRecipe = this.findMatchingRecipe()
       if (oldRecipe != this.currentProcessingRecipe) {
         this.processTime = 0
+        this.processFullTime = this.currentProcessingRecipe map (_.processTime) getOrElse 0
         this.markDirty()
       }
     }
@@ -223,8 +248,8 @@ object LargeCombiner {
   final class Container(
     syncId: Int,
     playerInventory: PlayerInventory,
-    private val inventory: Inventory,
-    val blockEntity: BlockEntity
+    private[this] val inventory: Inventory,
+    private[this] val blockEntity: BlockEntity
   ) extends net.minecraft.container.Container(null, syncId) {
     this.inventory onInvOpen this.playerInventory.player
     this addSlot new Slot(
@@ -244,6 +269,17 @@ object LargeCombiner {
       texmodel.LargeCombinerPanelView.SLOT_POSITION_SLUGOUT_X, texmodel.LargeCombinerPanelView.SLOT_POSITION_SLUGOUT_Y
     )
     utils.makePlayerInventorySlots(this.playerInventory, 8, texmodel.LargeCombinerPanelView.PLAYER_INVENTORY_START_Y) foreach this.addSlot
+
+    this addProperties blockEntity.propertyDelegate
+    final def processRate = {
+      val total = blockEntity.propertyDelegate get PD_INDEX_PROCESS_FULL
+      // System.out.println("processRate!" + total + "/" + blockEntity.propertyDelegate.get(PD_INDEX_PROCESS_TIME))
+      if (total == 0) 0.0f else blockEntity.propertyDelegate.get(PD_INDEX_PROCESS_TIME).asInstanceOf[Float] / total.asInstanceOf[Float]
+    }
+    final def energyRate = {
+      val total = blockEntity.propertyDelegate get PD_INDEX_ENERGY_FULL
+      if (total == 0) 0.0f else blockEntity.propertyDelegate.get(PD_INDEX_ENERGY_LEFT).asInstanceOf[Float] / total.asInstanceOf[Float]
+    }
 
     override def canUse(player: PlayerEntity) = this.inventory canPlayerUseInv player
     /**
@@ -305,7 +341,7 @@ object LargeCombiner {
         this,
         viewOriginX + texmodel.LargeCombinerPanelView.ARROW_OVERLAY_X,
         viewOriginY + texmodel.LargeCombinerPanelView.ARROW_OVERLAY_Y,
-        this.container.blockEntity.processProgress
+        this.container.processRate
       )
 
       texmodel.LargeCombinerPanelView.blitEnergyCellBase(
