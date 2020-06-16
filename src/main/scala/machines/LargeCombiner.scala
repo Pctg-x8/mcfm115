@@ -131,26 +131,10 @@ object LargeCombiner {
     private var currentProcessingRecipe: Option[Recipe] = None
 
     private var processTime: Int = 0
-    private var processFullTime: Int = 0
 
-    final val propertyDelegate = new PropertyDelegate {
-      override def get(index: Int) = index match {
-        case PD_INDEX_PROCESS_TIME => BlockEntity.this.processTime
-        case PD_INDEX_PROCESS_FULL => BlockEntity.this.processFullTime
-        case PD_INDEX_ENERGY_LEFT => BlockEntity.this.ec.left
-        case PD_INDEX_ENERGY_FULL => BlockEntity.this.ec.max
-        case _ => 0
-      }
-      override def set(index: Int, value: Int) = index match {
-        case PD_INDEX_PROCESS_TIME => { BlockEntity.this.processTime = value }
-        case PD_INDEX_PROCESS_FULL => { BlockEntity.this.processFullTime = value }
-        case _ => {
-          System.out.println("TODO: PropertyDelegate set EnergyCellProperties! "+index+"/"+value)
-        }
-      }
-
-      override final val size = PD_INDEX_ENERGY_FULL + 1
-    }
+    def getProcessTime = this.processTime
+    def getProcessFullTime = this.currentProcessingRecipe map (_.processTime) getOrElse 0
+    def getEnergyCell = this.ec
 
     /**
      * IO portのサイドとのマッピング
@@ -174,31 +158,33 @@ object LargeCombiner {
       case _ => throw new IllegalArgumentException("no available slots for otherwise ios")
     }
 
-    private def findMatchingRecipe() = this.world.getRecipeManager.getFirstMatch(RECIPE_TYPE, this, this.world).toScala
+    private def findMatchingRecipe() = this.world.getRecipeManager.getFirstMatch(
+      RECIPE_TYPE, this, this.world
+    ).toScala
 
     private final def onInputChanged(newItem: ItemStack) = {
       val oldRecipe = this.currentProcessingRecipe
       this.currentProcessingRecipe = this.findMatchingRecipe()
       if (oldRecipe != this.currentProcessingRecipe) {
         this.processTime = 0
-        this.processFullTime = this.currentProcessingRecipe map (_.processTime) getOrElse 0
         this.markDirty()
       }
     }
 
     override def tick() = {
-      for (Recipe(_, o, time) <- this.currentProcessingRecipe) {
-        this.processTime += 1
-        if (this.processTime >= time) {
-          this.processTime -= time
-          System.out.println("Processed!")
+      if (!this.world.isClient) {
+        for (Recipe(_, o, time) <- this.currentProcessingRecipe) {
+          this.processTime += 1
+          if (this.processTime >= time) {
+            this.processTime -= time
+            System.out.println("Processed!")
+          }
+          this.markDirty()
         }
-        this.markDirty()
       }
     }
 
     final def slotItemInput = this.inventory get INVENTORY_INDEX_INPUT
-    final def processProgress: Float = this.currentProcessingRecipe map { r => this.processTime.asInstanceOf[Float] / r.processTime.asInstanceOf[Float] } getOrElse 0.0f
 
     override def clear() = { this.inventory.clear() }
     override def canPlayerUseInv(player: PlayerEntity) = utils.distanceFromBlockCentric(player, this.pos) <= constants.PLAYER_DISTANCE_CONTAINER_USABLE_THRESHOLD
@@ -270,15 +256,54 @@ object LargeCombiner {
     )
     utils.makePlayerInventorySlots(this.playerInventory, 8, texmodel.LargeCombinerPanelView.PLAYER_INVENTORY_START_Y) foreach this.addSlot
 
-    this addProperties blockEntity.propertyDelegate
+    private[this] final val pd = if (this.blockEntity.getWorld.isClient) {
+      new PropertyDelegate {
+        var processTime: Int = 0
+        var processFullTime: Int = 0
+        var energyLeft: Int = 0
+        var energyFull: Int = 0
+
+        override final val size = PD_INDEX_ENERGY_FULL + 1
+
+        override def get(index: Int) = index match {
+          case PD_INDEX_PROCESS_TIME => this.processTime
+          case PD_INDEX_PROCESS_FULL => this.processFullTime
+          case PD_INDEX_ENERGY_LEFT => this.energyLeft
+          case PD_INDEX_ENERGY_FULL => this.energyFull
+          case _ => 0
+        }
+        override def set(index: Int, value: Int) = index match {
+          case PD_INDEX_PROCESS_TIME => { this.processTime = value }
+          case PD_INDEX_PROCESS_FULL => { this.processFullTime = value }
+          case PD_INDEX_ENERGY_LEFT => { this.energyLeft = value }
+          case PD_INDEX_ENERGY_FULL => { this.energyFull = value }
+          case _ => ()
+        }
+      }
+    } else {
+      new PropertyDelegate {
+        override final val size = PD_INDEX_ENERGY_FULL + 1
+
+        override def get(index: Int) = index match {
+          case PD_INDEX_PROCESS_TIME => Container.this.blockEntity.getProcessTime
+          case PD_INDEX_PROCESS_FULL => Container.this.blockEntity.getProcessFullTime
+          case PD_INDEX_ENERGY_LEFT => Container.this.blockEntity.getEnergyCell.left
+          case PD_INDEX_ENERGY_FULL => Container.this.blockEntity.getEnergyCell.max
+          case _ => 0
+        }
+        override def set(index: Int, value: Int) = 
+          throw new IllegalArgumentException(f"Cannot set property in server-side object: ${index} <- ${value}")
+      }
+    }
+    this addProperties pd
     final def processRate = {
-      val total = blockEntity.propertyDelegate get PD_INDEX_PROCESS_FULL
+      val total = this.pd get PD_INDEX_PROCESS_FULL
       // System.out.println("processRate!" + total + "/" + blockEntity.propertyDelegate.get(PD_INDEX_PROCESS_TIME))
-      if (total == 0) 0.0f else blockEntity.propertyDelegate.get(PD_INDEX_PROCESS_TIME).asInstanceOf[Float] / total.asInstanceOf[Float]
+      if (total == 0) 0.0f else this.pd.get(PD_INDEX_PROCESS_TIME).asInstanceOf[Float] / total.asInstanceOf[Float]
     }
     final def energyRate = {
-      val total = blockEntity.propertyDelegate get PD_INDEX_ENERGY_FULL
-      if (total == 0) 0.0f else blockEntity.propertyDelegate.get(PD_INDEX_ENERGY_LEFT).asInstanceOf[Float] / total.asInstanceOf[Float]
+      val total = this.pd get PD_INDEX_ENERGY_FULL
+      if (total == 0) 0.0f else this.pd.get(PD_INDEX_ENERGY_LEFT).asInstanceOf[Float] / total.asInstanceOf[Float]
     }
 
     override def canUse(player: PlayerEntity) = this.inventory canPlayerUseInv player
