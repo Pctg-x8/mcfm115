@@ -1,12 +1,12 @@
 {
     "type": "mcfm115:large_combine",
     "ingredient": {
-        "item": "mcfm115:tiny-pile-of-carbon-dust",
-        "count": 16
+        "item": "mcfm115:tiny-pile-of-carbon-dust"
     },
     "result": {
         "item": "mcfm115:carbon-dust",
         "count": 1
     },
-    "processTime": 200
+    "processTime": 200,
+    "requireCount": 16
 }
