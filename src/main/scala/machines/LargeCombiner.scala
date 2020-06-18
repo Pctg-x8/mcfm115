@@ -141,8 +141,8 @@ object LargeCombiner {
     private val ec = new ContainedEnergyCell(128 * 1000)
     private var currentProcessingRecipe: Option[Recipe] = None
 
-    private var hasInputChanged: Boolean = false
     private var processTime: Int = 0
+    private var oldInputItem: ItemStack = ItemStack.EMPTY
 
     def getProcessTime = this.processTime
     def getProcessFullTime = this.currentProcessingRecipe map (_.processTime) getOrElse 0
@@ -189,17 +189,15 @@ object LargeCombiner {
       if (this.world.isClient) return
 
       // レシピ更新
-      if (this.hasInputChanged) {
+      if (!(this.slotItemInput isEqual this.oldInputItem)) {
         if (this.updateCurrentRecipe()) {
           this.processTime = 0
           this.markDirty()
         }
-        this.hasInputChanged = false
+        this.oldInputItem = this.slotItemInput.copy()
       }
 
-      for (r <- this.currentProcessingRecipe) {
-        if (!this.canAcceptRecipeOutput(r)) return
-
+      for (r <- this.currentProcessingRecipe if this canAcceptRecipeOutput r) {
         this.processTime += 1
         if (this.processTime >= r.processTime) {
           this.processTime -= r.processTime
@@ -209,6 +207,7 @@ object LargeCombiner {
         this.markDirty()
       }
     }
+
     private final def doCraft(recipe: Recipe) = {
       if (this.canAcceptRecipeOutput(recipe)) {
         if (this.slotItemOutput.isEmpty()) {
@@ -237,10 +236,6 @@ object LargeCombiner {
     override def removeInvStack(slot: Int) = Inventories.removeStack(this.inventory, slot)
     override def setInvStack(slot: Int, stack: ItemStack) = {
       this.inventory.set(slot, stack)
-      if (!this.world.isClient && slot == INVENTORY_INDEX_INPUT) {
-        // 次tickでレシピの再検索を要請
-        this.hasInputChanged = true
-      }
     }
     override def takeInvStack(slot: Int, amount: Int) = Inventories.splitStack(this.inventory, slot, amount)
 
@@ -269,9 +264,6 @@ object LargeCombiner {
       Inventories.fromTag(tag, this.inventory)
       this.ec fromTag tag
       this.processTime = tag getInt TAG_KEY_PROCESS_TIME
-
-      // initial kick
-      this.hasInputChanged = true
     }
   }
   

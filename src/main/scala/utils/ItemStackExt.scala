@@ -17,5 +17,10 @@ package object ItemStackExt {
 
       true
     }
+
+    /**
+      * 同値判定(アイテムの個数とItemインスタンスで判定する)
+      */
+    final def isEqual(other: ItemStack): Boolean = this.stack.getCount() == other.getCount() && this.stack.getItem() == other.getItem()
   }
 }
