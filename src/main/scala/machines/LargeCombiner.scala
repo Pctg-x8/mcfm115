@@ -123,8 +123,7 @@ object LargeCombiner {
     override def createBlockEntity(view: BlockView): BlockEntity = new BlockEntity()
     override def onUse(state: BlockState, world: World, pos: BlockPos, player: PlayerEntity, hand: Hand, hit: BlockHitResult): ActionResult = {
       if (!world.isClient && world.getBlockEntity(pos).isInstanceOf[BlockEntity]) {
-        ContainerProviderRegistry.INSTANCE
-          .openContainer(LargeCombiner.ID, player, buf => { buf writeBlockPos pos; () })
+        ContainerProviderRegistry.INSTANCE.openContainer(ID, player, buf => { buf writeBlockPos pos; () })
       }
 
       ActionResult.SUCCESS
@@ -277,19 +276,23 @@ object LargeCombiner {
     this.inventory onInvOpen this.playerInventory.player
     this addSlot new Slot(
       this.inventory, INVENTORY_INDEX_INPUT,
-      texmodel.LargeCombinerPanelView.SLOT_POSITION_INGREDIENT_X, texmodel.LargeCombinerPanelView.SLOT_POSITION_PROCESSLINE_Y
+      texmodel.LargeCombinerPanelView.SLOT_POSITION_INGREDIENT_X,
+      texmodel.LargeCombinerPanelView.SLOT_POSITION_PROCESSLINE_Y
     )
-    this addSlot new Slot(
+    this addSlot new utils.OutputOnlySlot(
       this.inventory, INVENTORY_INDEX_OUTPUT,
-      texmodel.LargeCombinerPanelView.SLOT_POSITION_OUTPUT_X, texmodel.LargeCombinerPanelView.SLOT_POSITION_PROCESSLINE_Y
+      texmodel.LargeCombinerPanelView.SLOT_POSITION_OUTPUT_X,
+      texmodel.LargeCombinerPanelView.SLOT_POSITION_PROCESSLINE_Y
     )
     this addSlot new Slot(
       this.inventory, INVENTORY_INDEX_EC_INPUT,
-      texmodel.LargeCombinerPanelView.SLOT_POSITION_EC_X, texmodel.LargeCombinerPanelView.SLOT_POSITION_EC_Y
+      texmodel.LargeCombinerPanelView.SLOT_POSITION_EC_X,
+      texmodel.LargeCombinerPanelView.SLOT_POSITION_EC_Y
     )
     this addSlot new Slot(
       this.inventory, INVENTORY_INDEX_SLUG_OUTPUT,
-      texmodel.LargeCombinerPanelView.SLOT_POSITION_SLUGOUT_X, texmodel.LargeCombinerPanelView.SLOT_POSITION_SLUGOUT_Y
+      texmodel.LargeCombinerPanelView.SLOT_POSITION_SLUGOUT_X,
+      texmodel.LargeCombinerPanelView.SLOT_POSITION_SLUGOUT_Y
     )
     utils.makePlayerInventorySlots(this.playerInventory, 8, texmodel.LargeCombinerPanelView.PLAYER_INVENTORY_START_Y) foreach this.addSlot
 
@@ -333,11 +336,13 @@ object LargeCombiner {
       }
     }
     this addProperties pd
+    @Environment(EnvType.CLIENT)
     final def processRate = {
       val total = this.pd get PD_INDEX_PROCESS_FULL
       // System.out.println("processRate!" + total + "/" + blockEntity.propertyDelegate.get(PD_INDEX_PROCESS_TIME))
       if (total == 0) 0.0f else this.pd.get(PD_INDEX_PROCESS_TIME).asInstanceOf[Float] / total.asInstanceOf[Float]
     }
+    @Environment(EnvType.CLIENT)
     final def energyRate = {
       val total = this.pd get PD_INDEX_ENERGY_FULL
       if (total == 0) 0.0f else this.pd.get(PD_INDEX_ENERGY_LEFT).asInstanceOf[Float] / total.asInstanceOf[Float]
@@ -387,6 +392,7 @@ object LargeCombiner {
       // ちゃんとオーバーライドしてrenderBackgroundしてあげないと背景が暗くなってくれないらしい(なんだそれは)
       this.renderBackground()
       super.render(mouseX, mouseY, delta)
+      this.drawMouseoverTooltip(mouseX, mouseY)
     }
     override def drawForeground(mouseX: Int, mouseY: Int) = {
       this.font.drawStringCentric(this.title.asFormattedString, this.containerWidth / 2.0f, 6.0f, constants.PRIMARY_VIEW_TEXT_COLOR);
