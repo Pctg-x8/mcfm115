@@ -190,7 +190,8 @@ object LargeCombiner {
 
       // レシピ更新
       if (!(this.slotItemInput isEqual this.oldInputItem)) {
-        if (this.updateCurrentRecipe()) {
+        val hasUpdated = this.updateCurrentRecipe()
+        if (hasUpdated) {
           this.processTime = 0
           this.markDirty()
         }
