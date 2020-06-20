@@ -356,23 +356,37 @@ object LargeCombiner {
      * @param slotIndex 操作対象スロット
      */
     override def transferSlot(player: PlayerEntity, slotIndex: Int): ItemStack = {
-      var newStack = ItemStack.EMPTY
-
-      val slot = this.slots get slotIndex
-      if (slot != null && slot.hasStack) {
-        val orgStack = slot.getStack
-        newStack = orgStack
-        val inserted = if (slotIndex < this.inventory.getInvSize) {
-          this.insertItem(orgStack, this.inventory.getInvSize, this.slots.size, true)
+      Option(this.slots get slotIndex) filter (_.hasStack) flatMap {
+        slot => if (slotIndex < this.inventory.getInvSize) {
+          /// Machine Local Slots -> Player Inventory Slots
+          this.tryTransferSlot(slot, this.inventory.getInvSize, this.slots.size, true)
         } else {
-          this.insertItem(orgStack, 0, this.inventory.getInvSize, false)
+          /// Player Inventory Slots -> Machine Input Slot
+          this.tryTransferSlot(slot, 0, 1, false)
         }
-        if (!inserted) return ItemStack.EMPTY
+      } getOrElse ItemStack.EMPTY
+    }
 
-        if (orgStack.isEmpty) slot setStack ItemStack.EMPTY else slot.markDirty
+    /**
+      * スロットグループへのアイテム転送(Shift+クリック)
+      *
+      * @param orgSlot 元スロット
+      * @param targetSlotIndexStart 対象スロットグループの最初のインデックス(Inclusive)
+      * @param targetSlotIndexEnd 対象スロットグループの最後のインデックス(Exclusive)
+      * @param tryFromLast 後ろから試す場合(Player Inventoryに対しての場合とか)はtrue
+      * @return 転送に成功した場合は元スロットのItemStack、失敗したらNone
+      */
+    private[this] final def tryTransferSlot(orgSlot: Slot, targetSlotIndexStart: Int, targetSlotIndexEnd: Int, tryFromLast: Boolean) = {
+      val orgStack = orgSlot.getStack
+      val newStack = orgStack.copy()
+
+      val inserted = this.insertItem(orgStack, targetSlotIndexStart, targetSlotIndexEnd, tryFromLast)
+      if (inserted) {
+        if (orgStack.isEmpty) orgSlot.setStack(ItemStack.EMPTY) else orgSlot.markDirty()
+        Some(newStack) filter (_.getCount() != orgStack.getCount())
+      } else {
+        None
       }
-
-      newStack
     }
   }
 
