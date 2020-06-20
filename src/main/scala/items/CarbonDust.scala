@@ -12,7 +12,7 @@ import net.minecraft.item.ItemStack
 object CarbonDust extends Item(new Item.Settings().group(Mod.ITEM_GROUP_MAIN)) {
   final val ID = new Identifier(Mod.ID, "carbon-dust")
 
-  final def register = {
+  final def register() = {
     Registry.register(Registry.ITEM, ID, this)
   }
 
@@ -26,7 +26,7 @@ object CarbonDust extends Item(new Item.Settings().group(Mod.ITEM_GROUP_MAIN)) {
 object TinyPileOfCarbonDust extends Item(new Item.Settings().group(Mod.ITEM_GROUP_MAIN)) {
   final val ID = new Identifier(Mod.ID, "tiny-pile-of-carbon-dust")
 
-  final def register = {
+  final def register() = {
     Registry.register(Registry.ITEM, ID, this)
   }
 

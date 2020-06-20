@@ -39,7 +39,7 @@ object LargeCombiner {
   private var BLOCK_ENTITY_TYPE: BlockEntityType[BlockEntity] = null
   private var RECIPE_TYPE: RecipeType[Recipe] = null
   private var RECIPE_SERIALIZER: RecipeSerializer = null
-  final def register = {
+  final def register() = {
     val blockEntityTypeInstance = BlockEntityType.Builder.create(() => new BlockEntity(), Block).build(null)
     this.BLOCK_ENTITY_TYPE = Registry.register(Registry.BLOCK_ENTITY_TYPE, ID, blockEntityTypeInstance)
     ContainerProviderRegistry.INSTANCE.registerFactory(
@@ -58,7 +58,7 @@ object LargeCombiner {
     this.RECIPE_TYPE = Registry.register(Registry.RECIPE_TYPE, RECIPE_ID, new RecipeType[Recipe] {})
     this.RECIPE_SERIALIZER = Registry.register(Registry.RECIPE_SERIALIZER, RECIPE_ID, new RecipeSerializer())
   }
-  final def registerClient = {
+  final def registerClient() = {
     ScreenProviderRegistry.INSTANCE.registerFactory[Container](
       ID,
       c => new PanelView(c, MinecraftClient.getInstance.player.inventory)

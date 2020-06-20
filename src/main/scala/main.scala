@@ -21,16 +21,17 @@ object Mod extends ModInitializer {
     () => new ItemStack(net.minecraft.block.Blocks.COBBLESTONE)
   )
 
-  override def onInitialize = {
-    machines.LargeCombiner.register
-    items.TinyPileOfCarbonDust.register
-    items.CarbonDust.register
-    items.SandPaper.register
+  override def onInitialize() = {
+    transports.WoodGutter.register()
+    machines.LargeCombiner.register()
+    items.TinyPileOfCarbonDust.register()
+    items.CarbonDust.register()
+    items.SandPaper.register()
   }
 }
 
 object ClientMod extends ClientModInitializer {
-  override def onInitializeClient = {
-    machines.LargeCombiner.registerClient
+  override def onInitializeClient() = {
+    machines.LargeCombiner.registerClient()
   }
 }

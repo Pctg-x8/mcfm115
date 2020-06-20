@@ -10,7 +10,7 @@ import net.minecraft.util.registry.Registry
 object SandPaper extends Item(new Item.Settings().group(Mod.ITEM_GROUP_MAIN).maxDamage(64)) {
   final val ID = Mod makeIdentifier "sand-paper"
 
-  final def register = {
+  final def register() = {
     Registry.register(Registry.ITEM, ID, this)
   }
 }
