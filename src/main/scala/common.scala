@@ -1,4 +1,4 @@
-package com.cterm2.mcfm115.common
+package jp.ct2.mcfm115.common
 
 /**
   * 入出力のサイド定義

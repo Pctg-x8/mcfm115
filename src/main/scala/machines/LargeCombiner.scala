@@ -1,10 +1,10 @@
-package com.cterm2.mcfm115.machines
+package jp.ct2.mcfm115.machines
 
-import com.cterm2.mcfm115.Mod
-import com.cterm2.mcfm115.{utils, constants, texmodel, items}
-import com.cterm2.mcfm115.common.GenericIOSides
-import com.cterm2.mcfm115.utils.SerializeHelper._
-import com.cterm2.mcfm115.utils.ItemStackExt._
+import jp.ct2.mcfm115.Mod
+import jp.ct2.mcfm115.{utils, constants, texmodel, items}
+import jp.ct2.mcfm115.common.GenericIOSides
+import jp.ct2.mcfm115.utils.SerializeHelper._
+import jp.ct2.mcfm115.utils.ItemStackExt._
 import net.fabricmc.fabric.api.block.FabricBlockSettings
 import net.minecraft.block.{Material, BlockWithEntity, BlockState}
 import net.minecraft.block.entity.{BlockEntity, BlockEntityType, LockableContainerBlockEntity}
@@ -25,7 +25,7 @@ import net.fabricmc.api.{Environment, EnvType}
 import net.minecraft.util.registry.Registry
 import net.fabricmc.fabric.api.client.screen.ScreenProviderRegistry
 import net.minecraft.client.MinecraftClient
-import com.cterm2.mcfm115.utils.TextRendererExt._
+import jp.ct2.mcfm115.utils.TextRendererExt._
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.recipe.{RecipeType, Recipe => IBaseRecipe, Ingredient, RecipeSerializer => IRecipeSerializer}
 import net.minecraft.util.{Identifier, PacketByteBuf}

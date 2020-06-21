@@ -1,6 +1,6 @@
-package com.cterm2.mcfm115.texmodel
+package jp.ct2.mcfm115.texmodel
 
-import com.cterm2.mcfm115.Mod
+import jp.ct2.mcfm115.Mod
 import net.minecraft.client.gui.DrawableHelper
 import net.fabricmc.api.{Environment, EnvType}
 

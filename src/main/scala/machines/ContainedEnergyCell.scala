@@ -1,4 +1,4 @@
-package com.cterm2.mcfm115.machines
+package jp.ct2.mcfm115.machines
 
 import net.minecraft.nbt.CompoundTag
 

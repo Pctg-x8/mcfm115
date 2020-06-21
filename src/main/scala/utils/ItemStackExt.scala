@@ -1,4 +1,4 @@
-package com.cterm2.mcfm115.utils
+package jp.ct2.mcfm115.utils
 
 import net.minecraft.item.ItemStack
 

@@ -1,4 +1,4 @@
-package com.cterm2.mcfm115
+package jp.ct2.mcfm115
 
 package object constants {
     final val PLAYER_DISTANCE_CONTAINER_USABLE_THRESHOLD: Double = 64.0

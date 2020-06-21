@@ -21,13 +21,13 @@
     "main": [
       {
         "adapter": "scala",
-        "value": "com.cterm2.mcfm115.Mod"
+        "value": "jp.ct2.mcfm115.Mod"
       }
     ],
     "client": [
       {
         "adapter": "scala",
-        "value": "com.cterm2.mcfm115.ClientMod"
+        "value": "jp.ct2.mcfm115.ClientMod"
       }
     ]
   },

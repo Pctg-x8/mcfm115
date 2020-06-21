@@ -1,4 +1,4 @@
-package com.cterm2.mcfm115
+package jp.ct2.mcfm115
 
 import net.fabricmc.api.{ModInitializer, ClientModInitializer}
 import net.minecraft.util.registry.Registry

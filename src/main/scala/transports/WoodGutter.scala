@@ -1,6 +1,6 @@
-package com.cterm2.mcfm115.transports
+package jp.ct2.mcfm115.transports
 
-import com.cterm2.mcfm115.Mod
+import jp.ct2.mcfm115.Mod
 import net.minecraft.block.{BlockWithEntity, Block => McBlock}
 import net.minecraft.block.entity.{BlockEntity => McBlockEntity, BlockEntityType}
 import net.minecraft.block.Material

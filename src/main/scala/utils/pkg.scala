@@ -1,6 +1,6 @@
-package com.cterm2.mcfm115
+package jp.ct2.mcfm115
 
-import com.cterm2.mcfm115.constants
+import jp.ct2.mcfm115.constants
 import net.minecraft.entity.Entity
 import net.minecraft.util.math.BlockPos
 import net.minecraft.item.Item

@@ -1,6 +1,6 @@
-package com.cterm2.mcfm115.items
+package jp.ct2.mcfm115.items
 
-import com.cterm2.mcfm115.Mod
+import jp.ct2.mcfm115.Mod
 import net.minecraft.item.Item
 import net.minecraft.util.registry.Registry
 import net.minecraft.util.Identifier
