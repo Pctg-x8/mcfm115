@@ -14,6 +14,7 @@ import net.minecraft.block.BlockState
 import net.minecraft.entity.EntityContext
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.shape.VoxelShape
+import net.fabricmc.fabric.api.block.FabricBlockSettings
 
 package object WoodGutter {
   final val ID = Mod makeIdentifier "wood-gutter"
