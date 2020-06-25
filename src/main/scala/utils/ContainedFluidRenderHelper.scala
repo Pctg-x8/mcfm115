@@ -9,10 +9,12 @@ import net.minecraft.client.util.math.Matrix4f
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.client.color.world.BiomeColors
 import net.minecraft.util.math.BlockPos
+import net.minecraft.client.render.model.ModelLoader
 
 @Environment(EnvType.CLIENT)
 final class ContainedFluidRenderHelper {
-  private[this] final val waterSpriteStatic = MinecraftClient.getInstance.getBakedModelManager.getBlockModels.getModel(Blocks.WATER.getDefaultState).getSprite()
+  private[this] final val waterSpriteStatic = MinecraftClient.getInstance.getBakedModelManager.getBlockModels.getModel(Blocks.WATER.getDefaultState).getSprite
+  private[this] final val waterSpriteFlowing = ModelLoader.WATER_FLOW.getSprite
 
   def renderNormalWater(mp: MatrixStack, world: BlockRenderView, blockPos: BlockPos, vertexConsumer: VertexConsumer, light: Int, height: Float = 1.0f) = {
     val currentModelMatrix = mp.peek.getModel
@@ -32,5 +34,16 @@ final class ContainedFluidRenderHelper {
     (vertexConsumer vertex (currentModelMatrix, 0.0f, height * 0.5f, 1.0f) color (tintR, tintG, tintB, 1.0f) texture (topMinU, topMaxV) light light normal (currentNormalMatrix, 0.0f, 1.0f, 0.0f)).next()
     (vertexConsumer vertex (currentModelMatrix, 1.0f, height * 0.5f, 1.0f) color (tintR, tintG, tintB, 1.0f) texture (topMaxU, topMaxV) light light normal (currentNormalMatrix, 0.0f, 1.0f, 0.0f)).next()
     (vertexConsumer vertex (currentModelMatrix, 1.0f, height * 0.5f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (topMaxU, topMinV) light light normal (currentNormalMatrix, 0.0f, 1.0f, 0.0f)).next()
+
+    val northMinU = this.waterSpriteFlowing getFrameU 0.0
+    val northMinV = this.waterSpriteFlowing getFrameV (16.0 - height * 8.0)
+    val northMaxU = this.waterSpriteFlowing getFrameU 16.0
+    val northMaxV = this.waterSpriteFlowing getFrameV 16.0
+
+    // North(-Z)
+    (vertexConsumer vertex (currentModelMatrix, 1.0f, height * 0.5f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (northMinU, northMinV) light light normal (currentNormalMatrix, 0.0f, 0.0f, -1.0f)).next()
+    (vertexConsumer vertex (currentModelMatrix, 1.0f, 0.0f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (northMinU, northMaxV) light light normal (currentNormalMatrix, 0.0f, 0.0f, -1.0f)).next()
+    (vertexConsumer vertex (currentModelMatrix, 0.0f, 0.0f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (northMaxU, northMaxV) light light normal (currentNormalMatrix, 0.0f, 0.0f, -1.0f)).next()
+    (vertexConsumer vertex (currentModelMatrix, 0.0f, height * 0.5f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (northMaxU, northMinV) light light normal (currentNormalMatrix, 0.0f, 0.0f, -1.0f)).next()
   }
 }
