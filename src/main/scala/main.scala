@@ -11,6 +11,7 @@ import net.fabricmc.fabric.api.container.ContainerProviderRegistry
 import net.fabricmc.fabric.api.client.screen.ScreenProviderRegistry
 import net.minecraft.client.MinecraftClient
 import net.minecraft.text.TranslatableText
+import net.fabricmc.api.{EnvType, Environment}
 
 object Mod extends ModInitializer {
   final val ID = "mcfm115"
@@ -30,8 +31,12 @@ object Mod extends ModInitializer {
   }
 }
 
+@Environment(EnvType.CLIENT)
 object ClientMod extends ClientModInitializer {
+  final lazy val fluidRenderHelper = new utils.ContainedFluidRenderHelper
+
   override def onInitializeClient() = {
+    transports.WoodGutter.registerClient()
     machines.LargeCombiner.registerClient()
   }
 }
