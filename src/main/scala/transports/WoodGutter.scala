@@ -34,6 +34,19 @@ import net.minecraft.client.render.RenderLayers
 import jp.ct2.mcfm115.ClientMod
 import net.minecraft.client.render.item.ItemRenderer
 import net.minecraft.fluid.Fluid
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.tag.FluidTags
+import net.minecraft.util.Identifier
+import net.minecraft.entity.player.PlayerEntity
+import net.minecraft.util.{ActionResult, Hand}
+import net.minecraft.util.hit.BlockHitResult
+import net.minecraft.world.World
+import net.minecraft.block.FlowerBlock
+import net.minecraft.block.GrassBlock
+import net.minecraft.block.SaplingBlock
+import net.minecraft.item.BucketItem
+import net.minecraft.block.CauldronBlock
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry
 
 package object WoodGutter {
   final val ID = Mod makeIdentifier "wood-gutter"
@@ -64,6 +77,20 @@ package object WoodGutter {
     private final lazy val SHAPE = McBlock.createCuboidShape(0.0, 0.0, 0.0, 16.0, 8.0, 16.0)
     override def createBlockEntity(view: BlockView) = new BlockEntity()
     override def getOutlineShape(state: BlockState, view: BlockView, pos: BlockPos, context: EntityContext) = Block.SHAPE
+
+    override def onUse(state: BlockState, world: World, pos: BlockPos, player: PlayerEntity, hand: Hand, hit: BlockHitResult): ActionResult = {
+      if (world.isClient) return ActionResult.SUCCESS
+
+      val be = world.getBlockEntity(pos).asInstanceOf[BlockEntity]
+      for (usedItem <- Option(player getStackInHand hand)) {
+        import jp.ct2.mcfm115.utils.reflective._
+        if (be canPour (usedItem.getItem.asInstanceOf[BucketItem].getContainedFluid(), 1000)) {
+          println("pour")
+          return ActionResult.SUCCESS
+        }
+      }
+      ActionResult.PASS
+    }
   }
   final class BlockEntity extends McBlockEntity(BLOCK_ENTITY_TYPE) with Tickable {
     private var fluidAmount: Int = 0
@@ -72,6 +99,10 @@ package object WoodGutter {
 
     final def currentAmount = this.fluidAmount
     final def currentFluid = this.fluid
+    final def canPour(fluid: Fluid, amount: Int) = {
+      val isSameFluid = this.currentFluid map (fluid matchesType _) getOrElse true
+      isSameFluid && (this.fluidAmount + amount) < constants.WOOD_GUTTER_MAX_AMOUNT
+    }
 
     override def tick(): Unit = {
       if (this.updateDelayLeftTicks > 0) {
@@ -83,6 +114,19 @@ package object WoodGutter {
         // todo: flowing
         this.updateDelayLeftTicks = f getTickRate this.world
       }
+    }
+
+    override def toTag(tag: CompoundTag) = {
+      for (f <- this.fluid if this.fluidAmount > 0) {
+        tag.putString("FluidID", Registry.FLUID.getId(f).toString())
+        tag.putInt("FluidAmount", this.fluidAmount)
+      }
+
+      tag
+    }
+    override def fromTag(tag: CompoundTag) = {
+      this.fluid = Option(tag getString "FluidID") filter (_ != "") map { idstr => Registry.FLUID get new Identifier(idstr) }
+      this.fluidAmount = tag getInt "FluidAmount"
     }
   }
   @Environment(EnvType.CLIENT)
