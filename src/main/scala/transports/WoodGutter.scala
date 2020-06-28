@@ -1,6 +1,7 @@
 package jp.ct2.mcfm115.transports
 
 import jp.ct2.mcfm115.Mod
+import jp.ct2.mcfm115.utils
 import net.minecraft.block.{BlockWithEntity, Block => McBlock}
 import net.minecraft.block.entity.{BlockEntity => McBlockEntity, BlockEntityType}
 import net.minecraft.block.Material
@@ -76,7 +77,15 @@ package object WoodGutter {
       matrices.push()
 
       val topLight = WorldRenderer.getLightmapCoordinates(blockEntity.getWorld, blockEntity.getPos.up)
-      ClientMod.fluidRenderHelper.renderNormalWater(matrices, blockEntity.getWorld, blockEntity.getPos, vertexConsumers.getBuffer(RenderLayers.getFluidLayer(Blocks.WATER.getDefaultState.getFluidState)), topLight, 0.5f)
+      ClientMod.fluidRenderHelper.renderNormalWater(
+        matrices,
+        blockEntity.getWorld,
+        blockEntity.getPos,
+        vertexConsumers.getBuffer(RenderLayers.getFluidLayer(Blocks.WATER.getDefaultState.getFluidState)),
+        topLight,
+        0.5f,
+        utils.RENDER_SIDE_ALL
+      )
 
       matrices.pop()
     }

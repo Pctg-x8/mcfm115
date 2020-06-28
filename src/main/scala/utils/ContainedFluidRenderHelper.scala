@@ -16,7 +16,7 @@ final class ContainedFluidRenderHelper {
   private[this] final val waterSpriteStatic = MinecraftClient.getInstance.getBakedModelManager.getBlockModels.getModel(Blocks.WATER.getDefaultState).getSprite
   private[this] final val waterSpriteFlowing = ModelLoader.WATER_FLOW.getSprite
 
-  def renderNormalWater(mp: MatrixStack, world: BlockRenderView, blockPos: BlockPos, vertexConsumer: VertexConsumer, light: Int, height: Float = 1.0f) = {
+  def renderNormalWater(mp: MatrixStack, world: BlockRenderView, blockPos: BlockPos, vertexConsumer: VertexConsumer, light: Int, height: Float = 1.0f, renderSideFlags: RenderSide) = {
     val currentModelMatrix = mp.peek.getModel
     val currentNormalMatrix = mp.peek.getNormal
     val tint = BiomeColors.getWaterColor(world, blockPos)
@@ -35,15 +35,40 @@ final class ContainedFluidRenderHelper {
     (vertexConsumer vertex (currentModelMatrix, 1.0f, height * 0.5f, 1.0f) color (tintR, tintG, tintB, 1.0f) texture (topMaxU, topMaxV) light light normal (currentNormalMatrix, 0.0f, 1.0f, 0.0f)).next()
     (vertexConsumer vertex (currentModelMatrix, 1.0f, height * 0.5f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (topMaxU, topMinV) light light normal (currentNormalMatrix, 0.0f, 1.0f, 0.0f)).next()
 
-    val northMinU = this.waterSpriteFlowing getFrameU 0.0
-    val northMinV = this.waterSpriteFlowing getFrameV (16.0 - height * 8.0)
-    val northMaxU = this.waterSpriteFlowing getFrameU 16.0
-    val northMaxV = this.waterSpriteFlowing getFrameV 16.0
+    // RenderSide
+    val sideMinU = this.waterSpriteFlowing getFrameU 0.0
+    val sideMinV = this.waterSpriteFlowing getFrameV (16.0 - height * 8.0)
+    val sideMaxU = this.waterSpriteFlowing getFrameU 16.0
+    val sideMaxV = this.waterSpriteFlowing getFrameV 16.0
 
     // North(-Z)
-    (vertexConsumer vertex (currentModelMatrix, 1.0f, height * 0.5f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (northMinU, northMinV) light light normal (currentNormalMatrix, 0.0f, 0.0f, -1.0f)).next()
-    (vertexConsumer vertex (currentModelMatrix, 1.0f, 0.0f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (northMinU, northMaxV) light light normal (currentNormalMatrix, 0.0f, 0.0f, -1.0f)).next()
-    (vertexConsumer vertex (currentModelMatrix, 0.0f, 0.0f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (northMaxU, northMaxV) light light normal (currentNormalMatrix, 0.0f, 0.0f, -1.0f)).next()
-    (vertexConsumer vertex (currentModelMatrix, 0.0f, height * 0.5f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (northMaxU, northMinV) light light normal (currentNormalMatrix, 0.0f, 0.0f, -1.0f)).next()
+    if (renderSideFlags contains RENDER_SIDE_NORTH) {
+      (vertexConsumer vertex (currentModelMatrix, 1.0f, height * 0.5f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMinU, sideMinV) light light normal (currentNormalMatrix, 0.0f, 0.0f, -1.0f)).next()
+      (vertexConsumer vertex (currentModelMatrix, 1.0f, 0.0f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMinU, sideMaxV) light light normal (currentNormalMatrix, 0.0f, 0.0f, -1.0f)).next()
+      (vertexConsumer vertex (currentModelMatrix, 0.0f, 0.0f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMaxU, sideMaxV) light light normal (currentNormalMatrix, 0.0f, 0.0f, -1.0f)).next()
+      (vertexConsumer vertex (currentModelMatrix, 0.0f, height * 0.5f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMaxU, sideMinV) light light normal (currentNormalMatrix, 0.0f, 0.0f, -1.0f)).next()
+    }
+    // South(+Z)
+    if (renderSideFlags contains RENDER_SIDE_SOUTH) {
+      (vertexConsumer vertex (currentModelMatrix, 0.0f, height * 0.5f, 1.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMinU, sideMinV) light light normal (currentNormalMatrix, 0.0f, 0.0f, 1.0f)).next()
+      (vertexConsumer vertex (currentModelMatrix, 0.0f, 0.0f, 1.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMinU, sideMaxV) light light normal (currentNormalMatrix, 0.0f, 0.0f, 1.0f)).next()
+      (vertexConsumer vertex (currentModelMatrix, 1.0f, 0.0f, 1.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMaxU, sideMaxV) light light normal (currentNormalMatrix, 0.0f, 0.0f, 1.0f)).next()
+      (vertexConsumer vertex (currentModelMatrix, 1.0f, height * 0.5f, 1.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMaxU, sideMinV) light light normal (currentNormalMatrix, 0.0f, 0.0f, 1.0f)).next()
+    }
+
+    // East(+X?)
+    if (renderSideFlags contains RENDER_SIDE_EAST) {
+      (vertexConsumer vertex (currentModelMatrix, 1.0f, height * 0.5f, 1.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMinU, sideMinV) light light normal (currentNormalMatrix, 1.0f, 0.0f, 0.0f)).next()
+      (vertexConsumer vertex (currentModelMatrix, 1.0f, 0.0f, 1.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMinU, sideMaxV) light light normal (currentNormalMatrix, 1.0f, 0.0f, 0.0f)).next()
+      (vertexConsumer vertex (currentModelMatrix, 1.0f, 0.0f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMaxU, sideMaxV) light light normal (currentNormalMatrix, 1.0f, 0.0f, 0.0f)).next()
+      (vertexConsumer vertex (currentModelMatrix, 1.0f, height * 0.5f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMaxU, sideMinV) light light normal (currentNormalMatrix, 1.0f, 0.0f, 0.0f)).next()
+    }
+    // West(-X?)
+    if (renderSideFlags contains RENDER_SIDE_WEST) {
+      (vertexConsumer vertex (currentModelMatrix, 0.0f, height * 0.5f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMinU, sideMinV) light light normal (currentNormalMatrix, -1.0f, 0.0f, 0.0f)).next()
+      (vertexConsumer vertex (currentModelMatrix, 0.0f, 0.0f, 0.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMinU, sideMaxV) light light normal (currentNormalMatrix, -1.0f, 0.0f, 0.0f)).next()
+      (vertexConsumer vertex (currentModelMatrix, 0.0f, 0.0f, 1.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMaxU, sideMaxV) light light normal (currentNormalMatrix, -1.0f, 0.0f, 0.0f)).next()
+      (vertexConsumer vertex (currentModelMatrix, 0.0f, height * 0.5f, 1.0f) color (tintR, tintG, tintB, 1.0f) texture (sideMaxU, sideMinV) light light normal (currentNormalMatrix, -1.0f, 0.0f, 0.0f)).next()
+    }
   }
 }
