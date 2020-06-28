@@ -10,16 +10,18 @@ import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.client.color.world.BiomeColors
 import net.minecraft.util.math.BlockPos
 import net.minecraft.client.render.model.ModelLoader
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry
+import net.minecraft.fluid.Fluid
 
 @Environment(EnvType.CLIENT)
 final class ContainedFluidRenderHelper {
   private[this] final val waterSpriteStatic = MinecraftClient.getInstance.getBakedModelManager.getBlockModels.getModel(Blocks.WATER.getDefaultState).getSprite
   private[this] final val waterSpriteFlowing = ModelLoader.WATER_FLOW.getSprite
 
-  def renderNormalWater(mp: MatrixStack, world: BlockRenderView, blockPos: BlockPos, vertexConsumer: VertexConsumer, light: Int, height: Float = 1.0f, renderSideFlags: RenderSide) = {
+  def renderFluid(fluid: Fluid, mp: MatrixStack, world: BlockRenderView, blockPos: BlockPos, vertexConsumer: VertexConsumer, light: Int, height: Float = 1.0f, renderSideFlags: RenderSide) = {
     val currentModelMatrix = mp.peek.getModel
     val currentNormalMatrix = mp.peek.getNormal
-    val tint = BiomeColors.getWaterColor(world, blockPos)
+    val tint = FluidRenderHandlerRegistry.INSTANCE get fluid getFluidColor (world, blockPos, fluid.getDefaultState)
     val tintR = (tint >> 16 & 255).asInstanceOf[Float] / 255.0f
     val tintG = (tint >> 8 & 255).asInstanceOf[Float] / 255.0f
     val tintB = (tint & 255).asInstanceOf[Float] / 255.0f

@@ -1,7 +1,7 @@
 package jp.ct2.mcfm115.transports
 
 import jp.ct2.mcfm115.Mod
-import jp.ct2.mcfm115.utils
+import jp.ct2.mcfm115.{utils, constants}
 import net.minecraft.block.{BlockWithEntity, Block => McBlock}
 import net.minecraft.block.entity.{BlockEntity => McBlockEntity, BlockEntityType}
 import net.minecraft.block.Material
@@ -33,6 +33,7 @@ import net.minecraft.client.render.block.FluidRenderer
 import net.minecraft.client.render.RenderLayers
 import jp.ct2.mcfm115.ClientMod
 import net.minecraft.client.render.item.ItemRenderer
+import net.minecraft.fluid.Fluid
 
 package object WoodGutter {
   final val ID = Mod makeIdentifier "wood-gutter"
@@ -65,10 +66,23 @@ package object WoodGutter {
     override def getOutlineShape(state: BlockState, view: BlockView, pos: BlockPos, context: EntityContext) = Block.SHAPE
   }
   final class BlockEntity extends McBlockEntity(BLOCK_ENTITY_TYPE) with Tickable {
-    private var currentFluidAmount: Int = 0
+    private var fluidAmount: Int = 0
+    private var fluid: Option[Fluid] = None
+    private var updateDelayLeftTicks: Int = 0
 
-    override def tick() = {
-      // todo: nop
+    final def currentAmount = this.fluidAmount
+    final def currentFluid = this.fluid
+
+    override def tick(): Unit = {
+      if (this.updateDelayLeftTicks > 0) {
+        this.updateDelayLeftTicks -= 1
+        return
+      }
+
+      for (f <- this.fluid if Option(this.world) map { w => !w.isClient } getOrElse false) {
+        // todo: flowing
+        this.updateDelayLeftTicks = f getTickRate this.world
+      }
     }
   }
   @Environment(EnvType.CLIENT)
@@ -76,16 +90,19 @@ package object WoodGutter {
     override def render(blockEntity: BlockEntity, tickDelta: Float, matrices: MatrixStack, vertexConsumers: VertexConsumerProvider, light: Int, overlay: Int) = {
       matrices.push()
 
-      val topLight = WorldRenderer.getLightmapCoordinates(blockEntity.getWorld, blockEntity.getPos.up)
-      ClientMod.fluidRenderHelper.renderNormalWater(
-        matrices,
-        blockEntity.getWorld,
-        blockEntity.getPos,
-        vertexConsumers.getBuffer(RenderLayers.getFluidLayer(Blocks.WATER.getDefaultState.getFluidState)),
-        topLight,
-        0.5f,
-        utils.RENDER_SIDE_ALL
-      )
+      for (f <- blockEntity.currentFluid if blockEntity.currentAmount > 0) {
+        val topLight = WorldRenderer.getLightmapCoordinates(blockEntity.getWorld, blockEntity.getPos.up)
+        ClientMod.fluidRenderHelper.renderFluid(
+          f,
+          matrices,
+          blockEntity.getWorld,
+          blockEntity.getPos,
+          vertexConsumers.getBuffer(RenderLayers.getFluidLayer(Blocks.WATER.getDefaultState.getFluidState)),
+          topLight,
+          blockEntity.currentAmount.asInstanceOf[Float] / constants.WOOD_GUTTER_MAX_AMOUNT.asInstanceOf[Float],
+          utils.RENDER_SIDE_ALL
+        )
+      }
 
       matrices.pop()
     }
