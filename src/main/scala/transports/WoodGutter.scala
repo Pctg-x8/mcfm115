@@ -47,7 +47,8 @@ import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.world.World
 import net.minecraft.item.BucketItem
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry
-import net.minecraft.fluid.EmptyFluid
+import java.{util => ju}
+import net.minecraft.server.world.ServerWorld
 
 package object WoodGutter {
   final val ID = Mod makeIdentifier "wood-gutter"
@@ -97,11 +98,16 @@ package object WoodGutter {
 
       ActionResult.PASS
     }
+
+    override def scheduledTick(state: BlockState, world: ServerWorld, pos: BlockPos, random: ju.Random) = {
+      for (be <- (world getBlockEntity pos).tryInstanceOf[BlockEntity]) {
+        be.flow()
+      }
+    }
   }
-  final class BlockEntity extends McBlockEntity(BLOCK_ENTITY_TYPE) with Tickable {
+  final class BlockEntity extends McBlockEntity(BLOCK_ENTITY_TYPE) {
     private var fluidAmount: Int = 0
     private var fluid: Option[Fluid] = None
-    private var updateDelayLeftTicks: Int = 0
 
     final def currentAmount = this.fluidAmount
     final def currentFluid = this.fluid
@@ -118,26 +124,31 @@ package object WoodGutter {
       if (!(this.currentFluid map (fluid matchesType _) getOrElse true)) return false
       // 容量チェック
       if (this.fluidAmount + amount > constants.WOOD_GUTTER_MAX_AMOUNT) return false
+
       // OK
+      val firstTimePour = !this.fluid.isDefined
       this.fluid = Some(this.fluid getOrElse fluid)
       this.fluidAmount += amount
+      if (firstTimePour) this.scheduleFlow()
 
       true
     }
 
-    override def tick(): Unit = {
-      if (this.updateDelayLeftTicks > 0) {
-        this.updateDelayLeftTicks -= 1
-        return
+    private final def scheduleFlow() = {
+      for (f <- this.fluid) {
+        this.world.getBlockTickScheduler().schedule(this.pos, Block, f getTickRate this.world)
       }
-
+    }
+    def flow() = {
       for (f <- this.fluid if Option(this.world) map { w => !w.isClient } getOrElse false) {
         // todo: flowing
-        this.updateDelayLeftTicks = f getTickRate this.world
+        println("flow")
       }
+      this.scheduleFlow()
     }
 
     override def toTag(tag: CompoundTag) = {
+      super.toTag(tag)
       for (f <- this.fluid if this.fluidAmount > 0) {
         tag.putString("FluidID", Registry.FLUID.getId(f).toString())
         tag.putInt("FluidAmount", this.fluidAmount)
@@ -146,8 +157,11 @@ package object WoodGutter {
       tag
     }
     override def fromTag(tag: CompoundTag) = {
+      super.fromTag(tag)
       this.fluid = Option(tag getString "FluidID") filter (_ != "") map { idstr => Registry.FLUID get new Identifier(idstr) }
       this.fluidAmount = tag getInt "FluidAmount"
+
+      this.scheduleFlow()
     }
   }
   @Environment(EnvType.CLIENT)
