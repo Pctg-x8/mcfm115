@@ -5,6 +5,7 @@ import jp.ct2.mcfm115.{utils, constants}
 import jp.ct2.mcfm115.utils.reflective._
 import jp.ct2.mcfm115.utils.langHelper._
 import jp.ct2.mcfm115.utils.player._
+import jp.ct2.mcfm115.utils.fluid._
 import net.minecraft.block.{BlockWithEntity, Block => McBlock}
 import net.minecraft.block.entity.{BlockEntity => McBlockEntity, BlockEntityType}
 import net.minecraft.block.Material
@@ -46,6 +47,7 @@ import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.world.World
 import net.minecraft.item.BucketItem
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry
+import net.minecraft.fluid.EmptyFluid
 
 package object WoodGutter {
   final val ID = Mod makeIdentifier "wood-gutter"
@@ -73,7 +75,7 @@ package object WoodGutter {
   private final val META_WALL_WEST_BIT: Int = 8
 
   final object Block extends BlockWithEntity((FabricBlockSettings of Material.WOOD).build()) {
-    private final lazy val SHAPE = McBlock.createCuboidShape(0.0, 0.0, 0.0, 16.0, 8.0, 16.0)
+    private final val SHAPE = McBlock.createCuboidShape(0.0, 0.0, 0.0, 16.0, 8.0, 16.0)
     override def createBlockEntity(view: BlockView) = new BlockEntity()
     override def getOutlineShape(state: BlockState, view: BlockView, pos: BlockPos, context: EntityContext) = Block.SHAPE
 
@@ -83,9 +85,10 @@ package object WoodGutter {
       for (
         be <- (world getBlockEntity pos).tryInstanceOf[BlockEntity];
         usedItem <- Option(player getStackInHand hand);
-        bucket <- usedItem.getItem.tryInstanceOf[BucketItem]
+        bucket <- usedItem.getItem.tryInstanceOf[BucketItem];
+        fluid <- bucket.getContainedFluid().filterEmptyType
       ) {
-        val hasPoured = be.tryPour(bucket.getContainedFluid(), 1000)
+        val hasPoured = be.tryPour(fluid, 1000)
         if (hasPoured) {
           player.consumeHandheldBucketAt(pos, hand)
           return ActionResult.SUCCESS
