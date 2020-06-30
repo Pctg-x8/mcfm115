@@ -2,6 +2,9 @@ package jp.ct2.mcfm115.transports
 
 import jp.ct2.mcfm115.Mod
 import jp.ct2.mcfm115.{utils, constants}
+import jp.ct2.mcfm115.utils.reflective._
+import jp.ct2.mcfm115.utils.langHelper._
+import jp.ct2.mcfm115.utils.player._
 import net.minecraft.block.{BlockWithEntity, Block => McBlock}
 import net.minecraft.block.entity.{BlockEntity => McBlockEntity, BlockEntityType}
 import net.minecraft.block.Material
@@ -41,11 +44,7 @@ import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.util.{ActionResult, Hand}
 import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.world.World
-import net.minecraft.block.FlowerBlock
-import net.minecraft.block.GrassBlock
-import net.minecraft.block.SaplingBlock
 import net.minecraft.item.BucketItem
-import net.minecraft.block.CauldronBlock
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry
 
 package object WoodGutter {
@@ -81,14 +80,18 @@ package object WoodGutter {
     override def onUse(state: BlockState, world: World, pos: BlockPos, player: PlayerEntity, hand: Hand, hit: BlockHitResult): ActionResult = {
       if (world.isClient) return ActionResult.SUCCESS
 
-      val be = world.getBlockEntity(pos).asInstanceOf[BlockEntity]
-      for (usedItem <- Option(player getStackInHand hand)) {
-        import jp.ct2.mcfm115.utils.reflective._
-        if (be canPour (usedItem.getItem.asInstanceOf[BucketItem].getContainedFluid(), 1000)) {
-          println("pour")
+      for (
+        be <- (world getBlockEntity pos).tryInstanceOf[BlockEntity];
+        usedItem <- Option(player getStackInHand hand);
+        bucket <- usedItem.getItem.tryInstanceOf[BucketItem]
+      ) {
+        val hasPoured = be.tryPour(bucket.getContainedFluid(), 1000)
+        if (hasPoured) {
+          player.consumeHandheldBucketAt(pos, hand)
           return ActionResult.SUCCESS
         }
       }
+
       ActionResult.PASS
     }
   }
@@ -99,9 +102,24 @@ package object WoodGutter {
 
     final def currentAmount = this.fluidAmount
     final def currentFluid = this.fluid
-    final def canPour(fluid: Fluid, amount: Int) = {
-      val isSameFluid = this.currentFluid map (fluid matchesType _) getOrElse true
-      isSameFluid && (this.fluidAmount + amount) < constants.WOOD_GUTTER_MAX_AMOUNT
+
+    /**
+      * 液体を注いでみる
+      *
+      * @param fluid 液体
+      * @param amount 量(mB単位)
+      * @return 液体を注ぐことができたか？(例えば、容量が溢れてしまったり液体が合わない場合はfalseが帰る)
+      */
+    final def tryPour(fluid: Fluid, amount: Int): Boolean = {
+      // タイプチェック
+      if (!(this.currentFluid map (fluid matchesType _) getOrElse true)) return false
+      // 容量チェック
+      if (this.fluidAmount + amount > constants.WOOD_GUTTER_MAX_AMOUNT) return false
+      // OK
+      this.fluid = Some(this.fluid getOrElse fluid)
+      this.fluidAmount += amount
+
+      true
     }
 
     override def tick(): Unit = {
