@@ -161,7 +161,8 @@ package object WoodGutter {
       this.fluid = Option(tag getString "FluidID") filter (_ != "") map { idstr => Registry.FLUID get new Identifier(idstr) }
       this.fluidAmount = tag getInt "FluidAmount"
 
-      this.scheduleFlow()
+      // TODO: この時点ではworldないので呼べないような？どう復帰させればいいんだろう
+      // this.scheduleFlow()
     }
   }
   @Environment(EnvType.CLIENT)
