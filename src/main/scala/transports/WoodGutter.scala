@@ -49,6 +49,7 @@ import net.minecraft.item.BucketItem
 import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry
 import java.{util => ju}
 import net.minecraft.server.world.ServerWorld
+import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable
 
 package object WoodGutter {
   final val ID = Mod makeIdentifier "wood-gutter"
@@ -105,7 +106,7 @@ package object WoodGutter {
       }
     }
   }
-  final class BlockEntity extends McBlockEntity(BLOCK_ENTITY_TYPE) {
+  final class BlockEntity extends McBlockEntity(BLOCK_ENTITY_TYPE) with BlockEntityClientSerializable {
     private var fluidAmount: Int = 0
     private var fluid: Option[Fluid] = None
 
@@ -130,6 +131,8 @@ package object WoodGutter {
       this.fluid = Some(this.fluid getOrElse fluid)
       this.fluidAmount += amount
       if (firstTimePour) this.scheduleFlow()
+      this.markDirty()
+      if (Option(this.world) map { w => !w.isClient } getOrElse false) this.sync()
 
       true
     }
@@ -139,10 +142,14 @@ package object WoodGutter {
         this.world.getBlockTickScheduler().schedule(this.pos, Block, f getTickRate this.world)
       }
     }
-    def flow() = {
-      for (f <- this.fluid if Option(this.world) map { w => !w.isClient } getOrElse false) {
+    def flow(): Unit = {
+      if (this.world == null || this.world.isClient) return
+
+      for (f <- this.fluid) {
         // todo: flowing
         println("flow")
+        this.markDirty()
+        this.sync()
       }
       this.scheduleFlow()
     }
@@ -163,7 +170,11 @@ package object WoodGutter {
 
       // TODO: この時点ではworldないので呼べないような？どう復帰させればいいんだろう
       // this.scheduleFlow()
+      this.markDirty()
     }
+
+    override def fromClientTag(tag: CompoundTag) = this.fromTag(tag)
+    override def toClientTag(tag: CompoundTag) = this.toTag(tag)
   }
   @Environment(EnvType.CLIENT)
   final class EntityRenderer(dispatcher: BlockEntityRenderDispatcher) extends BlockEntityRenderer[BlockEntity](dispatcher) {
