@@ -1,7 +1,7 @@
 plugins {
 	id 'fabric-loom' version '0.2.7-SNAPSHOT'
 	id 'maven-publish'
-	id "scala"
+	id "java"
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
@@ -24,8 +24,31 @@ dependencies {
 	// PSA: Some older mods, compiled on Loom 0.2.1, might have outdated Maven POMs.
 	// You may need to force-disable transitiveness on them.
 	
+	implementation "ch.epfl.lamp:dotty-compiler_0.24:0.24.0-RC1"
 	// https://stackoverflow.com/questions/19030954/cant-find-nullable-inside-javax-annotation
 	implementation "com.google.code.findbugs:jsr305:3.0.2"
+}
+
+ext {
+	scalaSourceTree = fileTree(dir: "/src/main/scala", include: "**/*.scala")
+	projectJars = fileTree(dir: "/lib", include: "**/*.jar")
+	classesDir = file("${buildDir}/classes")
+
+	if (dottyLocal?.toBoolean()) {
+		dottyHome = System.getEnv("DOTTY_HOME")
+
+		dottyLibraryPath = file(dottyHome + "/lib")
+		dottyLibraryFiles = files { dottyLibraryPath.listFiles() }
+		dotcLibraryFiles = dottyLibraryFiles.filter { File f -> 
+			f.name.matches("scala-library(.*)jar") ||
+			f.name.matches("dotty-interfaces(.*)jar") ||
+			f.name.matches("dotty-library(.*)jar") ||
+			f.name.matches("dotty-compiler(.*)jar")
+		}
+		scalaClasspath = files(dotcLibraryFiles, projectJars, sourceSets.main.output, classesDir)
+	} else {
+		scalaClasspath = files(sourceSets.main.runtimeClasspath, projectJars, classesDir)
+	}
 }
 
 processResources {
@@ -41,11 +64,46 @@ processResources {
 	}
 }
 
+// sourceSets {
+// 	main {
+// 		java {
+// 			buildDir classesDir
+// 		}
+// 	}
+// }
+
 // ensure that the encoding is set to UTF-8, no matter what the system default is
 // this fixes some edge cases with special characters not displaying correctly
 // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
 tasks.withType(JavaCompile) {
-	options.encoding = "UTF-8"
+	options.deprecation true
+	options.encoding "UTF-8"
+}
+
+task compileScala(type: JavaExec) {
+	dependsOn compileJava
+
+	description "Compile Scala(dotty) source files"
+
+	classpath sourceSets.main.runtimeClasspath
+	String sources = scalaSourceTree.files.join("\" \"").replaceAll("\\\\", "/")
+
+	main "dotty.tools.dotc.Main"
+
+	jvmArgs "-Dscala.usejavacp=true"
+
+	args "-deprecation", "-encoding", "UTF8", "-d", classesDir, sources
+}
+compileScala.doFirst {
+	if (!classesDir.exists()) classesDir.mkdirs()
+}
+
+build {
+	dependsOn compileScala
+}
+
+runClient {
+	classpath scalaClasspath
 }
 
 // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task

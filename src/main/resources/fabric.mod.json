@@ -40,7 +40,7 @@
   "suggests": {
     "flamingo": "*"
   },
-  "requires": {
+  "depdends": {
     "fabric-language-scala": "*"
   }
 }
