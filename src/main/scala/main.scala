@@ -25,6 +25,7 @@ object Mod extends ModInitializer {
   override def onInitialize() = {
     transports.WoodGutter.register()
     machines.LargeCombiner.register()
+    machines.AnchorFlag.register()
     items.TinyPileOfCarbonDust.register()
     items.CarbonDust.register()
     items.SandPaper.register()
