@@ -9,4 +9,6 @@ package object constants {
 
     // Game Level
     final val WOOD_GUTTER_MAX_AMOUNT: Int = 2000
+    final val POLYMERIZED_EF_PACK_AMOUNT: Int = 32000
+    final val HIGH_POLYMERIZED_EF_PACK_AMOUNT: Int = 288000
 }
