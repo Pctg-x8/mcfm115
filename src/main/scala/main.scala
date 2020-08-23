@@ -42,7 +42,7 @@ object ClientMod extends ClientModInitializer {
 
   override def onInitializeClient() = {
     ModelLoadingRegistry.INSTANCE registerResourceProvider { _ => new CustomModelProvider() }
-    
+
     transports.WoodGutter.registerClient()
     machines.LargeCombiner.registerClient()
   }
@@ -51,7 +51,8 @@ object ClientMod extends ClientModInitializer {
 @Environment(EnvType.CLIENT)
 class CustomModelProvider extends ModelResourceProvider {
   final val ANCHOR_FLAG_MODEL_ID = Mod makeIdentifier "block/anchor-flag"
+  final val ANCHOR_FLAG_ITEM_MODEL_ID = Mod makeIdentifier "item/anchor-flag-white"
   override def loadModelResource(resourceId: Identifier, context: ModelProviderContext) =
-    if (resourceId equals ANCHOR_FLAG_MODEL_ID) renderer.AnchorFlagRenderer
+    if ((resourceId equals ANCHOR_FLAG_MODEL_ID) || (resourceId equals ANCHOR_FLAG_ITEM_MODEL_ID)) renderer.AnchorFlagRenderer
     else null
 }

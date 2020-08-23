@@ -1,5 +1,5 @@
 {
     "variants": {
-        "": { "model": "mcfm115:block/anchor-flag" }
+        "": { "model": "mcfm115:block/anchor-flag", "y": 90 }
     }
 }

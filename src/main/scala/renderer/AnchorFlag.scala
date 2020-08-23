@@ -26,11 +26,13 @@ import net.fabricmc.fabric.api.renderer.v1.mesh.MutableQuadView
 import net.fabricmc.fabric.api.renderer.v1.mesh.Mesh
 import net.fabricmc.api.{Environment, EnvType}
 import jp.ct2.mcfm115.machines.AnchorFlag.Metrics
+import net.minecraft.client.render.model.json.JsonUnbakedModel
 
 @Environment(EnvType.CLIENT)
 object AnchorFlagRenderer extends UnbakedModel with BakedModel with FabricBakedModel {
   var baked = false
 
+  private final val DEFAULT_BLOCK_MODEL_ID = new Identifier("minecraft:block/block")
   private final val SPRITE_IDS = List(
     new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("minecraft:block/stone")),
     new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("minecraft:block/oak_planks")),
@@ -38,13 +40,17 @@ object AnchorFlagRenderer extends UnbakedModel with BakedModel with FabricBakedM
   )
   private var sprites = Array[Sprite]()
   private var bakedMesh: Mesh = null
+  private var transforms: ModelTransformation = null
 
   // UnbakedModel //
-  override final def getModelDependencies() = ju.Collections.emptyList()
+  override final def getModelDependencies() = ju.Collections singletonList DEFAULT_BLOCK_MODEL_ID
   override final def getTextureDependencies(unbakedModelGetter: java.util.function.Function[Identifier, UnbakedModel], unresolvedTextureReferences: ju.Set[Pair[String,String]]) = this.SPRITE_IDS.asJavaCollection
   override final def bake(loader: ModelLoader, textureGetter: java.util.function.Function[SpriteIdentifier,Sprite], rotationContainer: ModelBakeSettings, modelId: Identifier): BakedModel = {
     if (this.baked) return this
     this.baked = true
+
+    // Get Default transformation
+    this.transforms = loader.getOrLoadModel(DEFAULT_BLOCK_MODEL_ID).asInstanceOf[JsonUnbakedModel].getTransformations
 
     // Load all sprites
     this.sprites = (this.SPRITE_IDS map textureGetter.apply).toArray
@@ -103,14 +109,14 @@ object AnchorFlagRenderer extends UnbakedModel with BakedModel with FabricBakedM
   override def getQuads(state: BlockState, face: Direction, random: ju.Random) = null
   override def useAmbientOcclusion() = false
   override def hasDepth() = false
-  override def isSideLit() = false
+  override def isSideLit() = true
   override def isBuiltin() = false
   /**
     * 壊したときに使われるスプライト
     */
   override def getSprite() = this.sprites(1)
-  override def getTransformation() = null
-  override def getItemPropertyOverrides() = null
+  override def getTransformation() = this.transforms
+  override def getItemPropertyOverrides() = ModelItemPropertyOverrideList.EMPTY
 
   // FabricBakedModel //
   /**
@@ -121,6 +127,6 @@ object AnchorFlagRenderer extends UnbakedModel with BakedModel with FabricBakedM
     context.meshConsumer accept this.bakedMesh
   }
   override def emitItemQuads(stack: ItemStack, randomSupplier: Supplier[ju.Random], context: RenderContext) = {
-
+    context.meshConsumer accept this.bakedMesh
   }
 }
