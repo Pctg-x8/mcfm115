@@ -22,20 +22,43 @@ import net.minecraft.entity.EntityContext
 import net.minecraft.util.shape.VoxelShape
 import net.minecraft.util.shape.VoxelShapes
 import net.minecraft.util.BooleanBiFunction
+import net.minecraft.block.MaterialColor
 
 /**
  * An Anchor Flag. A MiniFlags port with Chunk Loader functionality.
  */
 object AnchorFlag {
-  final val ID = Mod makeIdentifier "anchor-flag"
+  final val ID_LOCAL_BASE = "anchor-flag"
+  private final def makeIdentifier(suffix: String) = Mod makeIdentifier (ID_LOCAL_BASE + "-" + suffix)
   private var BLOCK_ENTITY_TYPE: BlockEntityType[BlockEntity] = null
   final def register() = {
-    val blockEntityTypeInstance = BlockEntityType.Builder.create(() => new BlockEntity(), Block).build(null)
-    BLOCK_ENTITY_TYPE = Registry.register(Registry.BLOCK_ENTITY_TYPE, ID, blockEntityTypeInstance)
+    val blockEntityTypeInstance = BlockEntityType.Builder.create(() => new BlockEntity(), new Block(MaterialColor.WHITE)).build(null)
+    BLOCK_ENTITY_TYPE = Registry.register(Registry.BLOCK_ENTITY_TYPE, makeIdentifier("b"), blockEntityTypeInstance)
 
-    val item = new BlockItem(Block, new net.minecraft.item.Item.Settings maxCount 1 maxDamage 0 group Mod.ITEM_GROUP_MAIN)
-    Registry.register(Registry.ITEM, ID, item)
-    Registry.register(Registry.BLOCK, ID, Block)
+    for ((c, s) <- List(
+      (MaterialColor.WHITE, "white"),
+      (MaterialColor.ORANGE, "orange"),
+      (MaterialColor.MAGENTA, "magenta"),
+      (MaterialColor.LIGHT_BLUE, "light-blue"),
+      (MaterialColor.YELLOW, "yellow"),
+      (MaterialColor.LIME, "lime"),
+      (MaterialColor.PINK, "pink"),
+      (MaterialColor.GRAY, "gray"),
+      (MaterialColor.LIGHT_GRAY, "light-gray"),
+      (MaterialColor.CYAN, "cyan"),
+      (MaterialColor.PURPLE, "purple"),
+      (MaterialColor.BLUE, "blue"),
+      (MaterialColor.BROWN, "brown"),
+      (MaterialColor.GREEN, "green"),
+      (MaterialColor.RED, "red"),
+      (MaterialColor.BLACK, "black")
+    )) {
+      val block = new Block(c)
+      val item = new BlockItem(block, new net.minecraft.item.Item.Settings maxCount 1 maxDamage 0 group Mod.ITEM_GROUP_MAIN)
+
+      Registry.register(Registry.ITEM, makeIdentifier(s), item)
+      Registry.register(Registry.BLOCK, makeIdentifier(s), block)
+    }
   }
   /**
     * Design Metrics(0.0 - 1.0)
@@ -63,7 +86,7 @@ object AnchorFlag {
     final val FlagThickness = 0.75f / 16.0f
   }
 
-  object Block extends net.minecraft.block.BlockWithEntity((FabricBlockSettings of Material.STONE hardness 0.0f).build()) {
+  class Block(color: MaterialColor) extends net.minecraft.block.BlockWithEntity((FabricBlockSettings of Material.STONE materialColor color hardness 0.0f).build()) {
     private[this] final lazy val PROP_FACING = HorizontalFacingBlock.FACING
     this.setDefaultState(this.stateManager.getDefaultState() `with` (PROP_FACING, Direction.NORTH))
 
