@@ -12,6 +12,10 @@ import net.fabricmc.fabric.api.client.screen.ScreenProviderRegistry
 import net.minecraft.client.MinecraftClient
 import net.minecraft.text.TranslatableText
 import net.fabricmc.api.{EnvType, Environment}
+import net.fabricmc.fabric.api.client.model.ModelResourceProvider
+import net.fabricmc.fabric.api.client.model.ModelProviderContext
+import net.minecraft.client.render.model.UnbakedModel
+import net.fabricmc.fabric.api.client.model.ModelLoadingRegistry
 
 object Mod extends ModInitializer {
   final val ID = "mcfm115"
@@ -37,7 +41,17 @@ object ClientMod extends ClientModInitializer {
   final lazy val fluidRenderHelper = new utils.ContainedFluidRenderHelper
 
   override def onInitializeClient() = {
+    ModelLoadingRegistry.INSTANCE registerResourceProvider { _ => new CustomModelProvider() }
+    
     transports.WoodGutter.registerClient()
     machines.LargeCombiner.registerClient()
   }
+}
+
+@Environment(EnvType.CLIENT)
+class CustomModelProvider extends ModelResourceProvider {
+  final val ANCHOR_FLAG_MODEL_ID = Mod makeIdentifier "block/anchor-flag"
+  override def loadModelResource(resourceId: Identifier, context: ModelProviderContext) =
+    if (resourceId equals ANCHOR_FLAG_MODEL_ID) renderer.AnchorFlagRenderer
+    else null
 }

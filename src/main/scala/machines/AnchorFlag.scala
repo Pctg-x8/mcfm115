@@ -30,11 +30,7 @@ import net.minecraft.block.MaterialColor
 object AnchorFlag {
   final val ID_LOCAL_BASE = "anchor-flag"
   private final def makeIdentifier(suffix: String) = Mod makeIdentifier (ID_LOCAL_BASE + "-" + suffix)
-  private var BLOCK_ENTITY_TYPE: BlockEntityType[BlockEntity] = null
   final def register() = {
-    val blockEntityTypeInstance = BlockEntityType.Builder.create(() => new BlockEntity(), new Block(MaterialColor.WHITE)).build(null)
-    BLOCK_ENTITY_TYPE = Registry.register(Registry.BLOCK_ENTITY_TYPE, makeIdentifier("b"), blockEntityTypeInstance)
-
     for ((c, s) <- List(
       (MaterialColor.WHITE, "white"),
       (MaterialColor.ORANGE, "orange"),
@@ -63,7 +59,7 @@ object AnchorFlag {
   /**
     * Design Metrics(0.0 - 1.0)
     */
-  private object Metrics {
+  object Metrics {
     /**
       * Margin from default block bound
       */
@@ -86,11 +82,12 @@ object AnchorFlag {
     final val FlagThickness = 0.75f / 16.0f
   }
 
-  class Block(color: MaterialColor) extends net.minecraft.block.BlockWithEntity((FabricBlockSettings of Material.STONE materialColor color hardness 0.0f).build()) {
+  class Block(
+    val color: MaterialColor
+  ) extends net.minecraft.block.Block((FabricBlockSettings of Material.STONE materialColor color hardness 0.0f).build()) {
     private[this] final lazy val PROP_FACING = HorizontalFacingBlock.FACING
     this.setDefaultState(this.stateManager.getDefaultState() `with` (PROP_FACING, Direction.NORTH))
 
-    override def createBlockEntity(_view: BlockView) = new BlockEntity()
     override def getPlacementState(ctx: ItemPlacementContext) = this.getDefaultState `with` (PROP_FACING, ctx.getPlayerFacing.getOpposite)
     override protected def appendProperties(builder: StateManager.Builder[net.minecraft.block.Block, BlockState]) = {
       builder.add(PROP_FACING)
@@ -106,6 +103,7 @@ object AnchorFlag {
     override def getCollisionShape(state: BlockState, view: BlockView, pos: BlockPos, context: EntityContext) = COLLISION_SHAPE
   }
 
+  /*
   final class BlockEntity extends net.minecraft.block.entity.BlockEntity(BLOCK_ENTITY_TYPE) {
     final def hashID = BlockEntity makeID this.getPos
 
@@ -122,6 +120,7 @@ object AnchorFlag {
       tag
     }
   }
+  */
   object BlockEntity {
     // Packing location to Long: y(8bit) x(28bit) z(28bit)
     final def makeID(pos: BlockPos) = ((pos.getY.toLong & 0xff) << 56) | ((pos.getX.toLong & 0xfffffff) << 28) | (pos.getZ.toLong & 0xfffffff)
