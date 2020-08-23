@@ -33,7 +33,8 @@ object AnchorFlagRenderer extends UnbakedModel with BakedModel with FabricBakedM
 
   private final val SPRITE_IDS = List(
     new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("minecraft:block/stone")),
-    new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("minecraft:block/oak_planks"))
+    new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("minecraft:block/oak_planks")),
+    new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("minecraft:block/white_wool"))
   )
   private var sprites = Array[Sprite]()
   private var bakedMesh: Mesh = null
@@ -76,6 +77,23 @@ object AnchorFlagRenderer extends UnbakedModel with BakedModel with FabricBakedM
       emitter spriteBake (0, this.sprites(1), MutableQuadView.BAKE_LOCK_UV) spriteColor (0, -1, -1, -1, -1)
       emitter.emit()
     }
+
+    // Build Flag Part(Square White)
+    emitter square (Direction.WEST, Metrics.Space, 1.0f - 5.5f / 16.0f, Metrics.Pole, 1.0f - 1.0f / 16.0f, 0.5f - Metrics.FlagThickness)
+    emitter spriteBake (0, this.sprites(2), MutableQuadView.BAKE_LOCK_UV) spriteColor (0, -1, -1, -1, -1)
+    emitter.emit()
+    emitter square (Direction.EAST, 1.0f - Metrics.Pole, 1.0f - 5.5f / 16.0f, 1.0f - Metrics.Space, 1.0f - 1.0f / 16.0f, 0.5f - Metrics.FlagThickness)
+    emitter spriteBake (0, this.sprites(2), MutableQuadView.BAKE_LOCK_UV) spriteColor (0, -1, -1, -1, -1)
+    emitter.emit()
+    emitter square (Direction.NORTH, 0.5f - Metrics.FlagThickness, 1.0f - 5.5f / 16.0f, 0.5f + Metrics.FlagThickness, 1.0f - 1.0f / 16.0f, Metrics.Space)
+    emitter spriteBake (0, this.sprites(2), MutableQuadView.BAKE_LOCK_UV) spriteColor (0, -1, -1, -1, -1)
+    emitter.emit()
+    emitter square (Direction.UP, 0.5f - Metrics.FlagThickness, 1.0f - Metrics.Pole, 0.5f + Metrics.FlagThickness, Metrics.InvSpace, 1.0f / 16.0f)
+    emitter spriteBake (0, this.sprites(2), MutableQuadView.BAKE_LOCK_UV) spriteColor(0, -1, -1, -1, -1)
+    emitter.emit()
+    emitter square (Direction.DOWN, 0.5f - Metrics.FlagThickness, Metrics.Space, 0.5f + Metrics.FlagThickness, Metrics.Pole, 1.0f - 5.5f / 16.0f)
+    emitter spriteBake (0, this.sprites(2), MutableQuadView.BAKE_LOCK_UV) spriteColor (0, -1, -1, -1, -1)
+    emitter.emit()
 
     this.bakedMesh = builder.build()
     this
