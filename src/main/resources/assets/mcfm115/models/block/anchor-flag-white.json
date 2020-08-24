@@ -1,0 +1,6 @@
+{
+    "parent": "mcfm115:block/anchor-flag",
+    "textures": {
+        "flag": "minecraft:block/white_wool"
+    }
+}

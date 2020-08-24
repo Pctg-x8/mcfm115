@@ -1,5 +1,8 @@
 {
     "variants": {
-        "": { "model": "mcfm115:block/anchor-flag", "y": 90 }
+        "facing=west": { "model": "mcfm115:block/anchor-flag-white" },
+        "facing=east": { "model": "mcfm115:block/anchor-flag-white", "y": 180 },
+        "facing=north": { "model": "mcfm115:block/anchor-flag-white", "y": 90 },
+        "facing=south": { "model": "mcfm115:block/anchor-flag-white", "y": 270 }
     }
 }
