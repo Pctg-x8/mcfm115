@@ -89,9 +89,7 @@ object AnchorFlag {
     this.setDefaultState(this.stateManager.getDefaultState() `with` (PROP_FACING, Direction.NORTH))
 
     override def getPlacementState(ctx: ItemPlacementContext) = this.getDefaultState `with` (PROP_FACING, ctx.getPlayerFacing.getOpposite)
-    override protected def appendProperties(builder: StateManager.Builder[net.minecraft.block.Block, BlockState]) = {
-      builder.add(PROP_FACING)
-    }
+    override protected def appendProperties(builder: StateManager.Builder[net.minecraft.block.Block, BlockState]) = builder add PROP_FACING
 
     private[this] final val OUTLINE_SHAPE = VoxelShapes.cuboid(Metrics.Space, 0.0, Metrics.Space, Metrics.InvSpace, 1.0, Metrics.InvSpace)
     private[this] final val COLLISION_SHAPE = VoxelShapes.combine(
